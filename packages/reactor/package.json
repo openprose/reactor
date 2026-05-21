@@ -1,0 +1,89 @@
+{
+  "name": "@openprose/reactor",
+  "version": "0.1.0-rc.1",
+  "description": "Ideal Reactor Harness runtime spine for OpenProse.",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./receipt": {
+      "types": "./dist/receipt/index.d.ts",
+      "default": "./dist/receipt/index.js"
+    },
+    "./cost": {
+      "types": "./dist/cost/index.d.ts",
+      "default": "./dist/cost/index.js"
+    },
+    "./kernel": {
+      "types": "./dist/kernel/index.d.ts",
+      "default": "./dist/kernel/index.js"
+    },
+    "./evidence-plan": {
+      "types": "./dist/evidence-plan/index.d.ts",
+      "default": "./dist/evidence-plan/index.js"
+    },
+    "./memo": {
+      "types": "./dist/memo/index.d.ts",
+      "default": "./dist/memo/index.js"
+    },
+    "./forecast": {
+      "types": "./dist/forecast/index.d.ts",
+      "default": "./dist/forecast/index.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk/index.d.ts",
+      "default": "./dist/sdk/index.js"
+    },
+    "./policy": {
+      "types": "./dist/policy/index.d.ts",
+      "default": "./dist/policy/index.js"
+    },
+    "./composition": {
+      "types": "./dist/composition/index.d.ts",
+      "default": "./dist/composition/index.js"
+    },
+    "./projection": {
+      "types": "./dist/projection/index.d.ts",
+      "default": "./dist/projection/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "!dist/**/__tests__/**",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts",
+    "!dist/**/*.test.d.ts.map",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openprose/prose.git",
+    "directory": "packages/reactor"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:runtime": "pnpm build && node --test $(find dist -name '*.test.js' -type f | sort)",
+    "test": "pnpm typecheck && pnpm test:runtime"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
