@@ -17,9 +17,9 @@ ships:
   says **what the author writes** so the runtime can do it. It bridges the
   Language doc and the Harness doc and is the definitive guide to writing
   `*.prose.md` for a Reactor-class harness.
-- **Internal decision log** — not shipped: the dialectic that produced the
-  Harness doc; the clean public statements live in the specs above and this
-  document does not repeat the dialectic.
+- [ReactorFeedback.md](../history/ReactorFeedback.md) — **the
+  decision log**, not shipped: the dialectic that produced the Harness doc;
+  the clean statements live in the docs above and it does not repeat them.
 - [00-Tenets.md](./00-Tenets.md) — **the constitution**. When any
   document tensions with a tenet, the tenet wins.
 
@@ -29,18 +29,11 @@ forecast-gated quiescence, variable-depth judging, and receipt composition.
 This doc tells you how to write contracts so those mechanisms actually engage
 instead of degrading to "cron plus a prompt."
 
-This document is organized in three parts, mirroring the rest of the spec:
+This file has three parts, mirroring the harness doc:
 
-1. **Ideal** — the Reactor-native authoring pattern as it should be. This is
-   the authored vision; it is frozen.
-2. **Current** — a code-grounded snapshot of how much of the pattern the
-   `openprose/prose` runtime actually realizes at `v0.1` (`0.1.0`), with
-   real module paths. This section is mechanically re-derivable from the code.
-3. **Roadmap (the Delta)** — the honest gap between Current and Ideal,
-   incorporating this document's own open items.
-
-`Ideal − Current = Roadmap`. The three are kept distinct so this document can
-never again claim shipped what is not, or aspire in the same breath it reports.
+1. The ideal Reactor-native authoring pattern.
+2. What the OpenProse skill implements today.
+3. What must change in the skill before the pattern is fully authorable.
 
 The single most important principle, stated once up front so the rest is read
 in its light:
@@ -54,7 +47,7 @@ in its light:
 
 ---
 
-## I. Ideal — The Reactor-Native Authoring Pattern
+## I. The Ideal Reactor-Native Authoring Pattern
 
 ### The inversion
 
@@ -528,192 +521,150 @@ a constraint the other rules bend around.
 
 ---
 
-## II. Current — What the Runtime Realizes at v0.1
+## II. What The OpenProse Skill Implements Today
 
-This section is a code-grounded audit of `openprose/prose` `main`
-(`0.1.0`, tag `reactor-v0.1.0`, packages `@openprose/reactor` and
-`@openprose/reactor-cradle`).
-It states which elements of Part I's pattern the runtime actually realizes,
-and how. It is mechanically re-derivable from the code; treat any drift
-between this section and the code as a bug in this section.
+This section assumes the responsibility CLI harness branch is merged and
+released (`@openprose/responsibility` backing both CLI and API), consistent
+with Part II of the harness doc.
 
-The previous edition of this section assumed a `@openprose/responsibility`
-package backing "both CLI and API." **That package does not exist.** The
-runtime spine that realizes the Reactor shipped instead as
-`@openprose/reactor` (`packages/reactor/`), with a deterministic test and
-evidence harness `@openprose/reactor-cradle` (`packages/reactor-cradle/`).
-Both are published stable OSS packages at `0.1.0`.
+### The authoring surface that already exists
 
-### What "the skill" vs "the runtime" means here
+The headline finding: **the Reactor-native pattern requires no
+new syntax.** Everything in Part I is expressible with the current skill.
 
-Part I is an authoring pattern: it concerns what an author writes in
-`*.prose.md`. The headline finding holds and is unchanged — **the
-Reactor-native pattern requires no new syntax.** Every section, kind, and
-keyword Part I uses is existing OpenProse surface; `01-Language.md`'s Current
-section is the authority on the authoring surface and is not re-audited here.
+| Pattern element | Skill support today |
+| --- | --- |
+| `kind: responsibility` with `### Goal`/`### Continuity`/`### Criteria`/`### Constraints`/`### Tools`/`### Fulfillment` | Present; `id:` is tooling-minted and stable across `name:`/filename renames (see `contract-markdown.md`) |
+| `kind: gateway` with `### Schedule`/`### Receives`/`### Emits`/`### Payload` | Present |
+| Fulfillment `kind: system`, `persist: project`, auto-wired via Forme | Present |
+| `### Execution` ProseScript: `call`, `parallel`, `for`, `loop`, `if`, `choice`, `try/catch/finally`, `agent`, `session`, `resume`, pipelines | Present — sufficient for the quiescence short-circuit and variable-depth gate |
+| `### Shape` (self / delegates / prohibited) for the actuation boundary | Present |
+| `### Memory` (`reads:`/`writes:`) for the durable ledger | Present |
+| std patterns (`oversight`, `fan-out`, `dialectic`, `guard`, `worker-critic`, `map-reduce`, …) instantiated by YAML in `### Services` | Present |
+| std/delivery renderers and file-writer for projections; project-memory service for the ledger | Present |
+| `prose compile` → IR, `prose serve` (cron + HTTP), `prose status`, judge status / pressure / Reactor decision records | Present |
 
-What this section audits is the other half: the **harness runtime** that the
-pattern is written _toward_. Part I's promised payoffs — provable quiescence,
-forecast-manufactured rechecks, memoization, variable-depth judging, verifiable
-composition — are runtime mechanisms. `@openprose/reactor` is the package that
-realizes them. The audit below reports how far it has gone.
+The skill can already express the _shape_ of a Reactor-native program end to
+end: a responsibility, a gateway, a projection-only or full fulfillment system,
+a memoization-friendly sense/judge/ledger decomposition, variable-depth
+escalation behind a confidence gate, and a composition edge via a project
+ledger.
 
-### The runtime spine, by Part I element
+### Current authoring limits
 
-| Pattern element (Part I) | Realized at v0.1? | Where, and how |
+Part I states the pattern as an unqualified north star. This section is where
+authoring reality is honest.
+
+| Authoring rule | State | Gap / what the author must currently do |
 | --- | --- | --- |
-| The canonical loop — ingest → judge → receipt | **Yes** | `packages/reactor/src/reactor/index.ts` `createRuntimeReactorV0` exposes `ingest`/`tick`/`receipts`/`registry`. `ingestTypedTurn` runs the loop: select planned evidence → check memo → run the shallow judge → append a content-hashed `judge` receipt. |
-| Three turn kinds — real input, forecast recheck, escalation | **Yes** | `ReactorRealInputTurnV0`, `ReactorForecastRecheckTurnV0`, `ReactorEscalationTurnV0` (`reactor/index.ts`). Escalation turns produce `blocked-escalation-receipt`s; the scheduler manufactures `forecast-recheck` turns. |
-| Quiescence — unchanged input short-circuits before the expensive judge | **Yes (memo-hit)** | `ingestTypedTurn` computes a memo key (`computeMemoKeyV0`, `packages/reactor/src/memo/`) over contract revision + evidence content hashes + dependency memo refs. On a reusable match it appends a `memo-hit-receipt` and **never invokes the judge** — zero model tokens. Exercised end-to-end by the cost thesis (see below). |
-| Memoization — content-addressed verdict reuse | **Yes** | `memo/index.ts`: `InMemoryMemoStoreV0`, `createMemoHitReceiptV0`, `createMemoizedVerdictEntryV0`. The runtime memoizes on a stable content identity supplied as evidence `content_hash` — the author-side "stable content identity" obligation of Rule 5 has a real consumer. |
-| Forecast — manufactured rechecks when the world is silent | **Yes** | `packages/reactor/src/forecast/index.ts` `evaluateForecastScheduleV0` computes due rechecks; `reactor/index.ts` `tickRuntimeScheduler` drives them. Two recheck kinds exist: `evidence-age` and `plan-age`. `plan-age` is the runtime form of Rule 5's plan-audit horizon. |
-| The shallow judge — coarse status + confidence | **Yes** | `packages/reactor/src/judge/index.ts` `runShallowJudgeV0` invokes the model-gateway adapter and returns one of the four statuses (`up`/`drifting`/`down`/`blocked`) plus a `ReceiptConfidenceV0`. `blocked` carries `reason`/`fix_target`/`interrupt_cause` — the Rule-3 undecidable-as-`blocked` doctrine is the receipt schema's actual shape. |
-| Variable-depth judging — escalate to an ensemble on uncertainty | **No (stub)** | `runShallowJudgeV0` accepts `depth: "shallow" \| "ensemble"`, but `depth === "ensemble"` **throws `not-implemented-in-v0.1`**. The runtime performs shallow judging only. Cradle carries one live-recorded ensemble-spread cassette (`spikes/k1-ensemble-spread.ts`) as recorded evidence, not a live runtime path. |
-| Receipts — content-addressed, verifiable | **Yes** | `packages/reactor/src/receipt/index.ts`: `openprose.receipt v0`, `createReceiptV0`, `verifyReceiptV0`, canonical sha256 hashing, `inspectReceiptProofV0`. Receipt roles are `judge \| fulfill \| summarize \| policy-compile`. |
-| Fulfillment — the world-mutating commit beat | **No (role only)** | `fulfill` exists as a `ReceiptRoleV0` enum value and as a kernel `KERNEL_MAY_NEVER` prohibition ("mutate the world or perform fulfillment side effects" — `kernel/index.ts`). There is **no fulfillment executor** in the runtime: the runtime produces judge/forecast/memo/escalation receipts, not world-mutating effects. The full-Reactor "send the email" arm is not yet a runtime path. |
-| Projection — owner / subscriber / public tiers | **Yes** | `packages/reactor/src/projection/index.ts`: `projectReceiptV0`, `projectReceiptProofV0`, tiers `owner`/`subscriber`/`public`. This realizes the privacy-as-failure-mode safeguard at the receipt level. |
-| Composition — consuming an upstream trail, revision-/signer-pinned | **Yes (verification), partial (signing)** | `packages/reactor/src/composition/index.ts`: `verifyUpstreamReceiptDependencyPinV0`, `evaluateTransitiveFreshnessV0`, `planCompositionPropagationV0`, `computeDownstreamComposedMemoKeyV0`. `ingestTypedTurn` verifies dependency receipts and runs `detectReceiptCycles` (`kernel/index.ts`), blocking on a cycle. Pins verify against contract revision and signer posture. The signer itself is the **null signer** (`createNullSignerReceiptSignatureV0`) — `{ scheme: "none" }` — so cross-trust-domain cryptographic signing is not yet real. |
-| The kernel — fixed-circuit safety, backstops, rollback | **Yes** | `packages/reactor/src/kernel/index.ts`: `evaluatePredicate`, `evaluateBackstops`, `compareRollback`, `detectReceiptCycles`, `createKernelSafetyReceipt`, plus `KERNEL_BACKSTOPS` and the 14-item `KERNEL_MAY_NEVER` list. Predicate-tripped reconciliation has a real, deterministic kernel. |
-| Policy — model-authored, compiled, recompiled, rolled back | **Yes in the package runtime; host adapters vary** | `packages/reactor/src/policy/index.ts` (≈2.6k lines): `authorPolicyArtifactV0`, `validatePolicyArtifactV0`, `planPolicyRecompileV0`, `executePolicyRecompileV0`, `planPolicyRollbackV0`. `tickRuntimeScheduler` runs the policy loop after a tick (`planAndMaybeExecutePolicyRecompileAfterTick`). The **two compiles** — the contract compile and the policy recompile — are both present in the package runtime: policy is authored by the agent-SDK adapter, validated by a kernel artifact validator, recompiled on drift, and rolled back on self-trip. The CLI serve adapter still uses a deterministic cold-start seed, so this row is runtime-realized but not fully exposed by every host. |
-| Cost accounting — flat spend under a static world | **Yes** | `packages/reactor/src/cost/index.ts`: `validateReceiptSurpriseAttributionV0`, `evaluateFlatSpendUnderStaticV0`, token-truth checks. Every receipt carries a `cost` block with `tokens.fresh`/`tokens.reused`. |
-| State export / exit — replayable, portable | **Yes (partial)** | `packages/reactor/src/sdk/exit-bundle.ts` + `importReactorExitBundleV0`: the SDK can export and re-import an exit bundle. This is the runtime form of invariant 8; it is a first export surface, not a full cross-harness migration tool. |
-
-### The cost thesis is measured, not asserted
-
-Part I's whole economic claim — "cost scales with surprise, not time" — has a
-runnable, package-backed demonstration. The `flat-tokens` example
-(`skills/open-prose/examples/flat-tokens`, driven from packed tarballs) runs
-four `createReactor().ingest()` turns against a static world and prints
-`tokens.fresh=46`, `tokens.reused=46`, `ratio=46:46`: after the first real
-judge, identical input yields memo-hit receipts at zero fresh tokens. The
-Cradle C5 summary contrasts this with two same-unit deterministic controls — a
-no-memo control at `92:0` and a naive-loop control at `92:0`
-(`packages/reactor-cradle/src/baselines/`). The memoization arm of Rule 5 is
-not a promise; it is observed.
-
-### What the Cradle exercises
-
-`@openprose/reactor-cradle` is the deterministic test harness, not a second
-runtime. It carries 121 tests, including roughly ten labelled integration
-scenarios (`packages/reactor-cradle/src/__tests__/`): `b1` scheduler tick,
-`b2` auto-recompile, `b3` auto-rollback, `b4` cycle detection, `b7` transitive
-freshness, `c2` hands-free, `c5` event-changing cost thesis, `e1`/`e2`
-composition, `w7` static-cost. `@openprose/reactor` itself carries 155 unit
-tests across receipt, kernel, memo, forecast, composition, policy, projection,
-judge, cost, and the reactor loop. The canonical loop, quiescence, forecast,
-the kernel, policy recompile/rollback, and composition all have integration
-coverage; ensemble judging and fulfillment do not, because they are not
-implemented.
-
-### The pattern's authoring rules against the runtime
-
-Part I states each rule as an unqualified north star. This is where authoring
-reality is honest: every rule is **writable today** (no syntax is missing),
-but several lean on runtime mechanisms whose realization is partial.
-
-| Authoring rule | Writable? | Runtime backing at v0.1 |
-| --- | --- | --- |
-| 1. Intent lives in the responsibility | Yes | Fully supported; an authoring concern, no runtime dependency. |
-| 2. Policy stated semantically, not as ProseScript | Yes | The author writes intent in `### Continuity`/`### Constraints`; the model-authored policy compile/recompile/rollback loop is **real** in `policy/index.ts` and runs after each tick. The author's semantic statement has a live consumer. |
-| 3. No host-specific contract logic | Yes | `### Tools`/`### Environment` are name-only by design; the runtime is adapter-injected (`ReactorAdaptersV0`, `sdk/index.ts`) with no hidden defaults. |
-| 4. Bounded activations | Yes | Idiomatic; `ingest`/`tick` are bounded turns by construction. The anti-pattern is author error, not a runtime gap. |
-| 5. Written for memoization / variable depth | Partial | The memoization half is **real and measured** (memo-hit path, cost thesis). The variable-depth half is **not** — `ensemble` depth throws `not-implemented-in-v0.1`. An author who gates a deep path in `### Execution` is writing forward-compatible intent the runtime does not yet execute. |
-| 6. Composition via referenced upstream trail | Partial | Dependency-receipt verification, transitive freshness, cycle detection, and composed memo keys are all real (`composition/index.ts`). Cryptographic signing is **null-signer only** — pin the revision now; cross-trust-domain signing awaits a non-null signer adapter. |
-| 7. Ledger as receipt/audit/exit unit | Partial | The receipt schema (`openprose.receipt v0`) is real, content-addressed, verifiable, and projectable. `as_of`, `next_forecast_recheck`, and content-addressing are runtime fields, not hand conventions. Exit-bundle export/import exists but is a first surface. |
-| 8. Replayable and exitable | Partial | The runtime is deterministic and replay-tested (Cradle replay/parity suites); `exit-bundle.ts` exports and re-imports state. A full cross-harness migration surface is not yet built. |
+| 1. Intent lives in the responsibility | Conformant | Fully authorable today |
+| 2. Policy stated semantically, not as ProseScript | Conformant (authoring) | Author writes intent in `### Continuity`/`### Constraints`; the _two-timescale model-authored recompile_ is harness-side and not yet built — the author's semantic statement is correct and forward-compatible regardless |
+| 3. No host-specific contract logic | Conformant | `### Tools`/`### Environment` are name-only by design |
+| 4. Bounded activations | Conformant | Idiomatic; the anti-pattern is author error, not a skill gap |
+| 5. Written for memoization / variable depth | Partial | Author _can and must_ emit a content identity from the sense service and gate depth in `### Execution`; the harness memo and forecast that consume the identity are "Not yet" per harness Conformance Ledger invariant 5. Author writes it now; full benefit lands when the harness does |
+| 6. Composition via referenced upstream trail | Partial | Expressible only as a `persist: project` ledger reference today; content-addressed signed receipts with pinned revision/signer are harness "Partial." Pin the revision in `### Criteria` now; cryptographic signing is an optional pluggable adapter for cross-trust-domain composition, not a deferred tier |
+| 7. Ledger as receipt/audit/exit unit | Partial | `### Memory` ledger works; `as_of` / `next_forecast_recheck` / content-addressing are conventions the author adds by hand until the receipt schema is finalized |
+| 8. Replayable and exitable | Partial | Contract + ledger are plain and portable; a first-class export/exit surface is harness "Partial" |
 
 ### Honest current limits for authors
 
-- **No fulfillment executor.** The runtime judges and records; it does not yet
-  mutate the world. The full-Reactor shape from Rule 4 is authorable but its
-  commit beat is not a runtime path at v0.1. The **projection-only Reactor**
-  shape is the one whose every component (sense → judge → receipt → projection)
-  has runtime backing — it is, today, the most fully realized Reactor shape.
-- **Variable-depth judging is a stub.** `depth: "ensemble"` throws. Gate the
-  deep path in `### Execution` for forward compatibility, but expect the
-  runtime to take the shallow branch until ensemble judging ships.
-- **File-watch gateways are not in live serve.** Serve supports cron and HTTP
-  ingress; queues, file watches, and provider subscriptions are later phases.
-  The worktree/planning-dir example must use a forecast-paced `### Schedule`
-  today and note the intended file-watch form.
-- **Composition is verified but null-signed.** Dependency-receipt verification,
-  revision pinning, transitive freshness, and cycle detection are real;
-  cryptographic signing is the null signer (`{ scheme: "none" }`). Pin the
-  revision in `### Criteria` now; cross-trust-domain composition awaits a
-  non-null signer adapter.
-- **The CLI path is local and deterministic.** It proves package/CLI
-  integration, receipt production, and projection — not production ingress or
-  hosted fulfillment quality.
+- **File-watch gateways are not in `prose serve`.** Live serve supports cron
+  and HTTP only; queues, file watches, and provider subscriptions are explicit
+  later phases. The Reactor-native worktree/planning-dir example must use a
+  forecast-paced `### Schedule` today and note the intended file-watch form.
+- **Memoization, forecast, and variable-depth are harness policy, not author
+  syntax.** The author's leverage is indirect: write `### Continuity` and the
+  sense service so a stable identity _exists_ to memoize on. A contract that
+  makes "did anything change" expensive defeats the mechanism no matter how
+  good the harness is.
+- **Receipt composition is approximated by project memory.** "B consumes A's
+  content-addressed signed receipt" is authored as "B reads A's
+  `persist: project` ledger and pins A's revision in `### Criteria`."
+  Functionally adequate; cryptographically weaker than the ideal until
+  receipts harden.
+- **The two-timescale policy loop is not authorable.** Authors state policy
+  _shape_ semantically; they cannot yet author the meta-Reactor that recompiles
+  policy on drift. This is correct — it is harness machinery — but it means a
+  Part I claim ("policy is model-authored and recompiled") is, at the authoring
+  layer, an intent statement the runtime does not yet fully honor.
 
-> The pattern is fully writable today. Its memoization, forecast, kernel,
-> policy-loop, composition-verification, projection, and receipt payoffs are
-> **realized in `@openprose/reactor` v0.1** and, for the cost thesis,
-> measured. Its variable-depth and world-mutating-fulfillment payoffs are
-> **not yet runtime paths**. Author to the ideal; do not claim the runtime
-> already reaches what this section marks "No" or "Partial."
+> The pattern is fully writable today. Several of its headline payoffs
+> (provable quiescence, forecast-manufactured rechecks, verifiable composition)
+> are harness commitments the author writes _toward_ and the runtime does not
+> yet fully deliver. Author to the ideal; do not claim the runtime already
+> reaches it.
 
 ---
 
-## III. Roadmap — The Delta
+## III. What Must Change In The Skill
 
-`Ideal − Current = Roadmap`. The gap is of two kinds: **documentation and
-doctrine changes** to the OpenProse skill that make the Reactor-native pattern
-the taught default, and **runtime work** in `openprose/prose` that closes the
-"No"/"Partial" rows of the Current audit. Neither changes OpenProse syntax.
+These are documentation and doctrine changes, not syntax changes. They make
+the Reactor-native pattern the _taught default_ rather than an advanced corner.
 
-### A. Skill documentation and doctrine
+### 1. Invert the Mental Model in `01-Language.md`
 
-These make the Reactor-native pattern the _taught default_ rather than an
-advanced corner.
+The "Mental Model" section currently lists Responsibility Runtime last, as a
+continuity addendum to a system-centric model. Rewrite it responsibility-first:
+the responsibility is the program; the gateway is ingress; the system is one
+beat of the loop; Forme/VM/ProseScript are the substrate. Keep the
+system-centric model as the bounded-work special case, explicitly labeled as
+the N=0 (no continuity) case of the Reactor base case.
 
-1. **Invert the Mental Model in `01-Language.md`.** The "Mental Model" section
-   lists Responsibility Runtime last, as a continuity addendum to a
-   system-centric model. Rewrite it responsibility-first: the responsibility
-   is the program; the gateway is ingress; the system is one beat of the loop;
-   Forme/VM/ProseScript are the substrate. Keep the system-centric model as the
-   bounded-work special case, explicitly labeled as the N=0 (no continuity)
-   case of the Reactor base case.
-2. **Reframe the "Directly runnable?" table.** Add a column or footnote
-   distinguishing _run_ (bounded) from _serve_ (reconciled). State plainly that
-   `kind: responsibility` being "not directly runnable" means "continuously
-   reconciled" and is the **intended top-level authored object** for any
-   standing goal — not a lesser artifact.
-3. **Add Reactor-native routing to `SKILL.md`.** "First 90 Seconds" routes
-   "Run a `.prose.md` service or system" as the default and Responsibility
-   Runtime as a specialist path. Add a recognition signal — "make sure X stays
-   true," "keep Y current," "watch Z and maintain a view" → **author a
-   responsibility + gateway first**, derive the system second — and a
-   first-class route that loads `responsibility-runtime.md` and this pattern
-   before `forme.md`/`prose.md`, not after.
-4. **Promote the authoring rules into `guidance/authoring.md`.** Add a
-   "Reactor-Native Authoring" section porting Part I's eight rules as a
-   checklist, with the memoization rule (Rule 5) called out as the one authors
-   most often violate, and the sense-service-must-emit-a-content-identity
-   requirement stated as a lint-able expectation.
-5. **Strengthen `### Continuity` / `### Criteria` doctrine in
-   `contract-markdown.md`.** State that `### Continuity` is the author's input
-   to forecast and memoization (name the freshness referents and the
-   memo-breaking condition; make "nothing changed" cheaply observable) and that
-   `### Criteria` must use observable referents, with "undecidable" framed as
-   an expected, high-value `blocked` reason routed to the author — never an
-   enum.
-6. **Add a canonical Reactor-native example.** The examples set demonstrates
-   full Reactors (stargazer, incident, compliance). Add a **projection-only**
-   example — an observe-but-never-touch overseer like the three-layer
-   Codex-build overseer — to teach the amputated-fulfillment shape, the
-   composition-via-ledger edge, and the forecast-paced-schedule-as-file-watch
-   stand-in. It is the clearest teaching case for "cost scales with surprise,
-   not the watched system's activity," and — per the Current audit — the
-   Reactor shape whose every component already has runtime backing.
-7. **Document the projection-only Reactor as a first-class shape.** Both
-   `responsibility-runtime.md` and `concepts/reactor.md` should name
-   projection-only (judge + projection, no fulfillment) as a deliberate,
-   supported shape with its own `### Constraints` idiom, not an incomplete
-   Reactor. It is a recurring real use case (audits, overseers, dashboards),
-   currently undocumented, and — because the runtime has no fulfillment
-   executor yet — the most fully realized Reactor shape at v0.1.
+### 2. Reframe the "Directly runnable?" table
 
-#### Definition of done for the authoring layer
+Add a column or a footnote distinguishing _run_ (bounded) from _serve_
+(reconciled). State plainly that `kind: responsibility` being "not directly
+runnable" means "continuously reconciled" and is the **intended top-level
+authored object** for any standing goal — not a lesser artifact.
+
+### 3. Add Reactor-native routing to `SKILL.md`
+
+"First 90 Seconds" routes "Run a `.prose.md` service or system" as the default
+and Responsibility Runtime as a specialist path. Add a recognition signal and a
+first-class route:
+
+- Recognition signal: "make sure X stays true," "keep Y current," "watch Z and
+  maintain a view" → **author a responsibility + gateway first**, derive the
+  system second.
+- Route: when the user describes a standing goal, load
+  `responsibility-runtime.md` and this pattern before `forme.md`/`prose.md`,
+  not after.
+
+### 4. Promote the authoring rules into `guidance/authoring.md`
+
+Add a "Reactor-Native Authoring" section that ports Part I's eight rules as a
+checklist, with the memoization rule (Rule 5) called out as the one authors
+most often violate. Include the sense-service-must-emit-a-content-identity
+requirement as a lint-able expectation.
+
+### 5. Strengthen `### Continuity` / `### Criteria` doctrine in `contract-markdown.md`
+
+These two sections are documented thinly relative to the load they now bear.
+`contract-markdown.md` should state that `### Continuity` is the author's input
+to forecast and memoization (name the freshness referents and the
+memo-breaking condition; make "nothing changed" cheaply observable) and that
+`### Criteria` must use observable referents, with "undecidable" framed as an
+expected, high-value `blocked` reason routed to the author — never an enum.
+
+### 6. Add a canonical Reactor-native example
+
+The examples set demonstrates full Reactors (stargazer, incident, compliance).
+Add a **projection-only** example — an observe-but-never-touch overseer like
+the three-layer Codex-build overseer — to teach the amputated-fulfillment
+shape, the composition-via-ledger edge, and the
+forecast-paced-schedule-as-file-watch-stand-in limit. It is the clearest
+teaching case for "cost scales with surprise, not the watched system's
+activity."
+
+### 7. Document the projection-only Reactor as a first-class shape
+
+Both `responsibility-runtime.md` and `concepts/reactor.md` should name
+projection-only (judge + projection, no fulfillment) as a deliberate,
+supported shape with its own `### Constraints` idiom, not an incomplete
+Reactor. This is a recurring real use case (audits, overseers, dashboards) and
+is currently undocumented.
+
+### Definition of done for the authoring layer
 
 - `01-Language.md` Mental Model is responsibility-first; the runnable table no
   longer implies responsibilities are lesser artifacts.
@@ -724,71 +675,37 @@ advanced corner.
 - `contract-markdown.md` documents `### Continuity` as forecast/memo input and
   `### Criteria` decidability with the undecidable-`blocked` doctrine.
 - A projection-only example ships and runs from a fresh clone.
-- Every Part I rule that the Current audit marks "Partial"/"No" is
-  cross-referenced to the runtime audit so authors are never told the runtime
+- Every Part I rule that is harness-"Partial"/"Not yet" is cross-referenced to
+  the harness Conformance Ledger so authors are never told the runtime
   delivers what it does not.
 
-### B. Runtime work — closing the Current audit's gaps
-
-These items bridge the runtime from its v0.1 state to Part I. They are the
-substantive "No"/"Partial" rows of Section II.
-
-1. **Variable-depth ensemble judging.** `runShallowJudgeV0` rejects
-   `depth: "ensemble"` with `not-implemented-in-v0.1`. The runtime must gain a
-   real ensemble path so the confidence-gated deep branch authors write in
-   `### Execution` actually executes. Cradle's K1 ensemble-spread cassette is
-   the recorded-evidence precursor.
-2. **A fulfillment executor.** `fulfill` is a receipt role and a kernel
-   prohibition, not a runtime path. The full-Reactor commit beat — the bounded,
-   `### Constraints`-governed world-mutation step — must be built before the
-   "send the email" shape is more than authorable.
-3. **A non-null signer adapter.** Composition verification is real but signed
-   with the null signer (`{ scheme: "none" }`). Cross-trust-domain
-   composition — Rule 6's acceptable-signer-set pinning — needs a real signer
-   adapter to be cryptographically meaningful rather than revision-pinned only.
-4. **File-watch and richer gateway ingress.** Live serve is cron + HTTP;
-   queues, file watches, and provider subscriptions are later phases. Until
-   then the worktree/planning-dir pattern uses a forecast-paced `### Schedule`.
-5. **A first-class export/exit and cross-harness migration surface.**
-   `exit-bundle.ts` exports and re-imports state; invariant 8's full promise —
-   carry the contract and its trail to another harness — needs a hardened
-   migration surface.
-6. **Postgres parity.** Cradle release parity exercises memory and filesystem
-   storage rows; Postgres is marked future.
-
-### C. Open authoring items
+### Open authoring items
 
 Deferred by design, tracked so they are neither invented nor dropped:
 
-1. **Content-identity convention.** The *existence* of the obligation is stated
-   in [01-Language.md](./01-Language.md) Part I (a sense service may return a
-   stable content identity as an `### Ensures` output) and now has a real
-   runtime consumer (the memo key is computed over evidence content hashes).
-   Only the *convention* — the exact shape of the identity (hash of what,
-   normalized how) — is deferred here, pending the harness receipt-schema
-   research (harness open item I.1).
-2. **Composition reference syntax — resolved.** "B depends on A" is authored as
-   a reserved `responsibility` typed-input in `### Requires` (the same
+1. **Content-identity convention.** The *existence* of the obligation is now
+   stated in [01-Language.md](./01-Language.md) Part I (a sense service may
+   return a stable content identity as an `### Ensures` output); only the
+   *convention* — the exact shape of the identity (hash of what, normalized
+   how) — is deferred here, pending the harness receipt-schema research
+   (harness open item I.1).
+2. **Composition reference syntax — resolved.** "B depends on A" is authored
+   as a reserved `responsibility` typed-input in `### Requires` (the same
    mechanism as `run`/`run[]`), pinning upstream id-or-path + contract
    revision + acceptable signer set; see [01-Language.md](./01-Language.md)
-   Part III §3. Kernel-verifiable, not a Forme edge. The prose-ledger reference
-   is the pre-receipt-schema stand-in until the receipt `composition` block
-   lands — and the runtime's `composition/index.ts` is the consumer of that
-   block once it does.
+   Part III §3. Kernel-verifiable, not a Forme edge. The prose-ledger
+   reference is the pre-receipt-schema stand-in until the receipt
+   `composition` block lands.
 3. **Policy-shape vocabulary.** How an author states hysteresis _shape_ ("this
    signal is noisy → widen the band") — and, equally, upstream freshness
    tolerance ("A may be one business day stale") — semantically, in a way the
    model-authored policy compile can consume, is principle-only (harness open
-   item I.4). The policy compile that would consume it is real
-   (`policy/index.ts`); the author-facing vocabulary is not yet specified.
+   item I.4).
 4. **Projection-tier authoring.** Owner / subscriber / public projection
    contracts (the privacy-as-failure-mode safeguard) have no authoring section
-   yet; the runtime tiers exist (`projection/index.ts`) but contract-level
-   authoring of them is ad hoc per fulfillment system.
+   yet; today it is ad hoc per fulfillment system.
 
 > `02-ReactorHarness.md` says what the machine must do.
-> `03-ReactorPattern.md` says what to write so it does it. The pattern is
-> fully writable now; its memoization, forecast, kernel, policy-loop,
-> composition-verification, and projection payoffs are realized in
-> `@openprose/reactor` v0.1 today. Its variable-depth and fulfillment payoffs
-> are roadmap. Author to the ideal, document the climb honestly.
+> `03-ReactorPattern.md` says what to write so it does it. The pattern
+> is fully writable now; its full power lands as the harness Conformance
+> Ledger closes. Author to the ideal, document the climb honestly.

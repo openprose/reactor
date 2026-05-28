@@ -16,26 +16,21 @@ ships:
   Reactor-Native Authoring Pattern**, **SKILL-bundled but harness-governed**:
   how to write `*.prose.md` so this harness's mechanisms engage. It bridges
   the Language doc and this doc.
-- **Internal decision log** — not shipped: the dialectic that produced this
-  revision. This document is the clean public statement and does not carry the
-  dialectic.
+- [ReactorFeedback.md](../history/ReactorFeedback.md) — **the
+  decision log**, not shipped: the dialectic that produced this revision. This
+  document is the clean statement and does not carry the dialectic.
 - [00-Tenets.md](./00-Tenets.md) — **the constitution**. When any
   document tensions with a tenet, the tenet wins.
 
 `ContinuousOutcomes.md` is out-of-scope ideation, not part of the runtime spec.
 
-This file has three parts, kept structurally distinct so the document cannot
-silently rot the way an earlier revision did:
+This file has three parts:
 
-1. **Ideal** — the Reactor-class harness as it *should* be. The vision; frozen.
-2. **Current** — a code-grounded snapshot of what the `openprose/prose`
-   repository *actually implements today*, named down to modules, types, and
-   test counts. Mechanically re-derivable from the code.
-3. **Roadmap (the Delta)** — what bridges Current → Ideal before OpenProse
-   publicly launches the term with a technical report.
-
-`Ideal − Current = Roadmap`. Part I never claims something shipped; Part II
-never aspires.
+1. The ideal Reactor-class harness.
+2. What exists today, assuming the responsibility CLI harness branch is merged
+   and released.
+3. What is next before OpenProse should publicly launch the term with a
+   technical report.
 
 ---
 
@@ -825,447 +820,49 @@ actually changed. Additional worked examples are catalogued in Part II.
 
 ---
 
-## II. Current — What the Code Implements Today
+## II. What Exists Today
 
-This section is a **code audit**, not a status memo. It describes the
-`openprose/prose` repository (`main`, HEAD `52724ed`, tag
-`reactor-v0.1.0`) as it stands: the
-`@openprose/reactor` package, the `@openprose/reactor-cradle` evaluation
-harness, and the `@openprose/prose-cli` Reactor path. Every claim names a
-module, type, or test count and is re-derivable from the tree. Where the code
-does not yet reach the Ideal, the Conformance Ledger says so.
+This section assumes the responsibility CLI harness branch is merged to main
+and released: `@openprose/responsibility` is used by the open source
+CLI/server, with the skill-level Reactor doctrine repurposed around that
+package.
 
-> **One package, not the package the older spec named.** Earlier revisions of
-> this document described a shared `@openprose/responsibility` package and a
-> `platform/`-rooted layout. **Neither exists in the public repository.** The
-> runtime wave deleted `@openprose/responsibility`; the typed Reactor authority
-> is now `@openprose/reactor`, a greenfield package built directly against
-> Part I. The CLI depends on it as `"@openprose/reactor": "workspace:*"`. All
-> module paths below are real and rooted at the repository, not at a private
-> `platform/` tree.
+**Read this part as prior art mined, not a foundation being extended.** The
+Reactor package is greenfield — `@openprose/reactor` is built fresh against
+the Part I spec. What carries forward from the older
+`@openprose/responsibility` is not its policy core but hard-won operational
+scars — crash-window replay, durable pressure-dispatch claims, restart
+recovery — requirements discovered the expensive way. Everything below
+describes what physically exists today and remains factually accurate; its
+role, however, is the quarry, not the scaffold. The Conformance Ledger tracks
+`@openprose/reactor`'s climb toward Part I, not the retrofit of the prior
+package. **`@openprose/responsibility` is not on the shipping path and is
+scheduled for deletion; it is retained only as referenceable prior art whose
+architecture diverges from the plan. All release, pin, and parity gates target
+`@openprose/reactor`.** Where passages below still name
+`@openprose/responsibility`, read it as the soon-to-be-deleted prior package
+being mined, never as the artifact that ships.
 
-### Repository surface
+### Existing Open Source Surface
 
-| Surface | What exists today |
-| --- | --- |
-| Reactor package | `packages/reactor/` — `@openprose/reactor`, version `0.1.0`, MIT, zero runtime dependencies, published to npm with provenance. Thirteen subpath exports: `receipt`, `cost`, `kernel`, `evidence-plan`, `memo`, `forecast`, `sdk`, `reactor`, `judge`, `adapters`, `policy`, `composition`, `projection`. |
-| Cradle package | `packages/reactor-cradle/` — `@openprose/reactor-cradle`, the evaluation/eval-double harness: synthetic worlds, baselines, scenario runner, provider-parity, live-spike recorders. Depends on `@openprose/reactor`. |
-| CLI | `tools/cli/` — `@openprose/prose-cli`. Commands: `prose compile`, `prose serve`, `prose status`, plus `prose doctor`. The serve path imports `@openprose/reactor` directly. |
-| Other workspace packages | `packages/std`, `packages/co` (Language-side, out of scope for this document). |
-| State layout | The CLI writes package-owned Reactor state under the OpenProse root (`state/reactor/`), plus per-responsibility projections under `state/responsibilities/{id}/`. The repository ships no Postgres adapter. |
-| Agent hosts | The CLI carries `claude-sdk`, `codex-sdk`, and `mock` harnesses (`tools/cli/src/harnesses/`). |
+| Surface             | What Exists                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract Markdown   | `*.prose.md` source files with `service`, `system`, `gateway`, `test`, `pattern`, and `responsibility` kinds                                      |
+| Responsibility docs | `skills/open-prose/responsibility-runtime.md`, `concepts/responsibility.md`, and `concepts/reactor.md`                                            |
+| CLI                 | `prose compile`, `prose serve`, `prose run`, and `prose status`                                                                                   |
+| Examples            | release readiness, incident briefing, customer risk, compliance evidence, research inbox, content performance, vendor renewal, stargazer outreach |
+| State layout        | `runs/`, `state/`, `state/responsibilities/`, and package-owned responsibility runtime state                                                      |
+| Agent hosts         | Codex, Claude, and mock harness support                                                                                                           |
 
-Test counts, run against HEAD `52724ed` via each package's documented
-`pnpm … test` (typecheck + `node --test` over built `dist`, or `vitest` for
-the CLI):
+The open source repository can already show the _shape_ of a Reactor-class
+harness: authored responsibilities, compiled intent, local serve, bounded
+activations, status files, pressure, and status inspection.
 
-- **`@openprose/reactor`** — **155 tests, all passing.** 19 spec source
-  modules under `packages/reactor/src/*/__tests__/`.
-- **`@openprose/reactor-cradle`** — **121 tests, all passing.** 32 test files,
-  including 10 `*.integration.test.ts` scenarios (B1–B7, C2, C5, E1, E2, W7).
-- **`@openprose/prose-cli`** — **284 tests across 26 files, all passing.**
+### Responsibility Catalog
 
-This is unit-, contract-, and integration-verified substrate. It is **not yet
-an empirical proof of the category thesis**: the cost-scales-with-surprise
-numbers below are produced by deterministic replay against synthetic worlds and
-recorded cassettes, not by live multi-provider judging at scale.
-
-### Receipt v0 — `packages/reactor/src/receipt/`
-
-The receipt schema of *Open specification item I.1* is **implemented and
-pinned**. `RECEIPT_SCHEMA = "openprose.receipt"`, `RECEIPT_VERSION = 0`,
-`RECEIPT_HASH_ALGORITHM = "sha256"`. `ReceiptV0` carries the six blocks the
-Ideal specifies — `core`, `sig`, `verdict`, `freshness`, `composition`,
-`cost` — plus `content_hash`.
-
-- **Content addressing is real.** `computeReceiptContentHashV0` canonicalizes
-  the payload (sorted keys, `undefined` rejected, non-finite numbers rejected)
-  and SHA-256-hashes it; `createReceiptV0` self-verifies on construction and
-  throws on any malformed input. `verifyReceiptV0` recomputes the hash and
-  rejects a mismatch, unpinned keys, or a wrong shape.
-- **`core`** carries `event_cause ∈ {real-input, forecast-recheck,
-  escalation}`; a `forecast-recheck` is required to carry
-  `recheck_kind ∈ {evidence-age, plan-age}` and any other cause is forbidden
-  from carrying it — the plan-audit floor is sliceable without a fourth
-  top-level cause, exactly as the Ideal requires. `role ∈ {judge, fulfill,
-  summarize, policy-compile}`.
-- **`sig`** — the null signer is a first-class, non-deceptive state.
-  `NullReceiptSignatureV0` is `{scheme: "none", null_reason}`;
-  `createNullSignerReceiptSignatureV0` stamps reason
-  `"no-signer-adapter-configured"`. A non-null `AdapterReceiptSignatureV0`
-  shape is *typed* but **rejected at validation**: `validateSignature` pushes
-  the error *"non-null signatures are not supported in receipt v0.1; null
-  signer is the only honest v0.1 state."* Cryptographic signing is Roadmap.
-- **`verdict`** — one of the four coarse statuses; `confidence` with `value`,
-  `derivation_method`, `calibration_grade ∈ {authored, accrued, none}`, and
-  `label_source`; a `blocked` block (required iff status is `blocked`) with
-  `reason`, `fix_target`, `interrupt_cause ∈ {needs-judgment, needs-input,
-  contract-declared}`.
-- **`freshness`** — `as_of`, `next_forecast_recheck`,
-  `transitive_freshness_policy_ref`, and `consumed_freshness_evaluated` (per
-  consumed receipt: `receipt_hash`, `next_forecast_recheck`,
-  `staleness_outcome ∈ {fresh, stale-refetched, stale-blocked}`). When
-  receipts are consumed the transitive-freshness policy ref and a
-  per-consumed-receipt evaluation are *required* by `validateComposedFreshness`.
-- **`composition`** — `consumed_receipts` each pinning
-  `upstream_content_hash`, `contract_revision`, and a non-empty
-  `acceptable_signer_set`; plus a `cycle_checked` boolean.
-- **`cost`** — token-truth: `provider`, `model`, `role`, `tags`,
-  `responsibility_id`, `run_id`, `as_of`, `tokens.{fresh,reused}`, and
-  `surprise_cause`. Sliceable by every dimension the Ideal names.
-- **The single deferral matches the Ideal.** `cost.provider_norm` is an
-  optional sub-object validated only for a `schema` string. Its full
-  cross-provider normalization (cache-write/read price, TTL, minimum-cacheable
-  thresholds) is the one deferred element of I.1 — present as a typed slot,
-  unfilled.
-- **Inspection / proof surface.** `inspectReceiptProofV0` and
-  `ReceiptProofInspectionV0` give a non-throwing audit view; `serializeReceiptV0`
-  emits canonical bytes.
-
-Receipt module: 15 test groups in `receipt/__tests__/receipt.test.ts`.
-
-### The deterministic kernel — `packages/reactor/src/kernel/`
-
-The kernel of *Open specification item I.2* is **implemented**, including the
-B1/B2/B3 no-anchor additions.
-
-- **`KERNEL_BACKSTOPS`** pins the seed constants from I.2 exactly:
-  `maxPolicyAgeMs` 30 days, `maxPolicyAgeNoAnchorMs` 7 days,
-  `minRecompileIntervalMs` 1 hour, `maxCalibrationDivergenceMultiplier` 2,
-  `maxUnforcedDeepIntervalMs` 7 days.
-- **`KERNEL_MAY_NEVER`** is a 14-entry frozen list of prohibitions (the kernel
-  may never author judgment, call a model to decide a backstop, lengthen a
-  backstop, quiesce on missing safety-critical inputs, emit confident `up`
-  under degraded calibration, …). A test —*"may-never list preserves W2
-  prohibitions as executable contract checks"* — keeps it load-bearing.
-- **Predicate evaluator.** `evaluatePredicate` is a dumb evaluator of a typed
-  `KernelPredicateExpression` (`equals`, `not-equals`,
-  `greater-than-or-equal`, `less-than`, `and`, `or`, `not`) against
-  `KernelFacts`. Its three-valued `PredicateOutcome` —
-  `not-tripped | tripped | indeterminate` — fails closed: a malformed
-  expression or a missing fact is `indeterminate`, never silently false.
-- **`evaluateBackstops`** is gated by a `ValidatedKernelPolicyArtifactToken`
-  (a branded, frozen token only `validateKernelPolicyArtifact` can mint —
-  raw policy artifacts cannot reach the evaluators). It fails *closed*: a
-  missing calibration-evidence seed, missing warmup seed, or missing
-  no-anchor deep baseline each produce a backstop outcome rather than silence.
-- **B1/B2/B3.** `validateKernelPolicyArtifact` **rejects** a policy whose
-  falsification predicate references no live observable (B3), and **requires**
-  a no-anchor policy to ship a `backstop_divergence_predicate` that itself
-  references a live observable (B2). `evaluateBackstopDivergencePredicate`
-  evaluates only the validated, frozen predicate and emits a content-addressed
-  `force-policy-recompile` safety receipt when it trips. The no-anchor 7-day
-  forced-deep cadence (B2) and 7-day no-anchor policy-age ceiling (B1) are
-  enforced in `evaluateBackstops`.
-- **Rollback.** `compareRollback` decides
-  `rollback | keep-current | no-last-known-good` strictly by *judged-activation
-  count* — `JudgedActivations` is a branded integer; a test asserts wall-clock
-  duration is never used.
-- **Cycle detection** — `detectReceiptCycles` is a deterministic DFS over
-  content-addressed receipt edges, order-independent, failing closed on
-  malformed edges.
-- **Fail-safe receipts.** `createKernelSafetyReceipt`,
-  `resolvePersistentIndeterminate` (a bounded-`indeterminate` →
-  `needs-judgment` primitive), and the divergence path all emit real receipt
-  v0 entries with `verdict.status = "blocked"` and zero tokens.
-
-Kernel module: 19 test groups in `kernel/__tests__/kernel.test.ts`.
-
-### Memoization — `packages/reactor/src/memo/`
-
-The memoization core of *Quiescence* is **implemented as a primitive**.
-
-- **`computeMemoKeyV0`** hashes a normalized `MemoKeyInputV0` —
-  `contract_revision` + a deduplicated, sorted set of `evidence_receipts` +
-  sorted `dependency_receipts` — under schema `openprose.memo-key`, `v: 0`.
-  The key is complete relative to its declared inputs by construction.
-- **`InMemoryMemoStoreV0`** is namespaced by
-  `(policy_artifact_namespace, policy_artifact_revision)` — a policy recompile
-  changes the namespace and so cannot reuse a stale verdict.
-- **`createMemoHitReceiptV0`** emits a receipt with
-  `cost.tokens = {fresh: 0, reused: <prior total>}` and provider `memo` —
-  the fresh-vs-reused proof the Ideal calls for. A memo hit is provably
-  zero fresh judge tokens.
-- The runtime (`reactor/index.ts`) uses this primitive: on an unchanged
-  evidence hash a forecast evidence-age recheck produces a memo-hit receipt
-  with `fresh = 0`.
-
-Memo module: 5 test groups in `memo/__tests__/memo.test.ts`.
-
-### Forecast-gated scheduling — `packages/reactor/src/forecast/`
-
-`evaluateForecastScheduleV0` is **implemented**. It carries a
-`ForecastScheduleStateV0` with two independent clocks —
-`next_evidence_recheck` and `next_plan_recheck` — exactly the *second
-forecast clock* the plan-completeness audit requires. When neither clock is
-due it returns `outcome: "sleep"` with zero token-bearing receipts; when a
-clock crosses it returns `manufacture-recheck` with synthetic
-`forecast-recheck` receipts tagged `recheck_kind`. The `adversarial-silent`
-reason path (no real input observed yet a clock crossed) is distinguished from
-the ordinary `forecast-clock-crossed` reason. Forecast is the
-synthetic-input mechanism that makes silence safe.
-
-Forecast module: 4 test groups in `forecast/__tests__/forecast.test.ts`.
-
-### Compiled evidence plan — `packages/reactor/src/evidence-plan/`
-
-The *completeness law* — shallow judging executes a compiled, stable evidence
-plan; only deep roaming may discover new sources — is **implemented**.
-`executeShallowEvidencePlan` walks a `CompiledEvidencePlan`'s declared sources
-and fails safe (a kernel safety receipt) if a required source has no collector
-or produces an unverifiable receipt. `reconcileDeepRoam` returns
-`force-recompile` when deep roaming discovers a source outside the compiled
-plan — plan-incompleteness is surfaced through recompile, never silently
-swallowed. The memo key cannot be patched in place; this is enforced by
-construction.
-
-Evidence-plan module: 7 test groups.
-
-### The judge — `packages/reactor/src/judge/`
-
-The judge is **partially implemented and explicitly bounded to shallow depth.**
-`runShallowJudgeV0` calls the model-gateway adapter for a single shallow
-verdict and returns a `ReceiptVerdictV0` plus token-truth usage. **It throws
-`"not-implemented-in-v0.1"` for `depth: "ensemble"`.** The variable-depth,
-multi-provider, calibration-scored judge ensemble of the *Failure model* —
-the diversity floor, degraded-calibration ladder, ensemble-spread confidence
-estimator — is **not implemented as a runtime judging path**. Every shallow
-verdict is emitted with `calibration_grade: "none"` and label source
-`no-anchor-v0.1`. Ensemble judging exists only as the recorded K1 calibration
-cassettes in the Cradle (see *Evaluation harness* below).
-
-Judge module: 1 test group.
-
-### The Reactor runtime — `packages/reactor/src/reactor/` and `sdk/`
-
-`createReactor` (in `sdk/`) returns a `ReactorSdkV0` handle —
-`{adapters, ingest, tick, receipts, registry, export}` — and is the public
-runtime entry. `createRuntimeReactorV0` wires the modules into a real loop:
-
-- **`ingest(event)`** normalizes a typed turn (`real-input`,
-  `forecast-recheck`, `escalation`), selects evidence from the compiled plan,
-  verifies dependency receipts and runs cycle detection, looks up the memo
-  store, invokes the shallow judge on a miss, and appends a verified receipt.
-- **`tick(as_of)`** is the bounded scheduler: it reads the forecast schedule,
-  manufactures due rechecks, and runs the policy recompile/rollback loop.
-- **Cold start** authors a policy on the first real input:
-  `authorPolicyArtifactV0` is invoked **once** through the agent-SDK adapter,
-  the artifact is validated, and revision `1` is persisted before any judging.
-- **Export/import.** `export()` builds a `ReactorExitBundleV0` —
-  contract revision, active policy artifact bytes, all receipts, dependency
-  pins, runtime registry, memo namespace binding — and
-  `importReactorExitBundleV0` hydrates a fresh reactor from it. A test
-  confirms an imported runtime-produced log produces the *same next
-  deterministic receipt hash* as the original: replay/exit is real for the
-  shipped path.
-
-Reactor module: 23 test groups; SDK module: 18.
-
-### Policy — `packages/reactor/src/policy/`
-
-The policy layer is **implemented as a one-shot cold-start author plus the
-recompile/rollback decision machinery; the recurring two-timescale loop is
-partial.**
-
-- **`authorPolicyArtifactV0`** runs a two-step agentic exchange
-  (history-query, then author-artifact) through the agent-SDK adapter — the
-  exploratory-agent shape of *The two compiles* v0.1.
-- **`validatePolicyArtifactV0`** validates the authored artifact against
-  schema `openprose.reactor.policy-artifact`, `v: 0`.
-- **`derivePolicyDriftFactsV0`**, **`evaluatePolicyDriftV0`**,
-  **`planPolicyRecompileV0`**, **`executePolicyRecompileV0`**, and
-  **`planPolicyRollbackV0`** implement the drift-detection, recompile, and
-  rollback decision functions. They are exercised by `policy-drift`,
-  `policy-recompile`, and `policy-rollback` tests (5 + 6 + 5 groups) and by
-  the Cradle `recompile`, `rollback`, `policy-drift`, and `policy-replay`
-  integration scenarios.
-- **Partial**: the runtime cold start authors policy revision `1` once. The
-  *recurring* model-authored recompile-on-drift loop — the predicate tripping
-  in production and re-invoking the author over accumulated history — is the
-  v0.2 milestone of *The two compiles*; the decision functions exist and are
-  unit/integration tested, but they are not yet driven by a live standing
-  loop.
-- The `transitive_freshness_function` is a model-authored policy parameter
-  with a `DEFAULT_TRANSITIVE_FRESHNESS_FUNCTION_V0`, recorded in the registry.
-
-### Composition — `packages/reactor/src/composition/`
-
-Composition-via-receipts is **implemented**. `verifyUpstreamReceiptDependencyPinV0`
-fails closed on supply-chain mismatches (content hash, contract revision, or
-signer outside the pinned set). `evaluateTransitiveFreshnessV0` applies the
-recorded transitive-freshness function with the kernel-backstop default
-(`stale-blocked` at the forecast boundary), honors a stricter authored
-minimum, and records `stale-refetched` replacements.
-`computeDownstreamComposedMemoKeyV0` and `planCompositionPropagationV0`
-make a dependent re-judge on an upstream receipt change and stop on a memo
-hit — propagation reuses memoization exactly. The Cradle E1/E2 integration
-tests compose an A/B/C chain through receipt pins, prove one upstream receipt
-amortizes across N downstream memo-hit propagations, and exercise
-fork/exit carry-over.
-
-Composition module: 15 test groups.
-
-### Projection — `packages/reactor/src/projection/`
-
-Tiered projection (the *Privacy is a failure mode* requirement) is
-**implemented**. `projectReceiptV0` and `projectReceiptProofV0` emit
-`owner | subscriber | public` projections under schema
-`openprose.reactor.receipt-projection`, `v: 0`. Owner projections may carry
-rich verdict data; subscriber and public projections are explicit narrowed
-contracts, not ad-hoc filtering. The CLI wires `prose status
---tier=owner|subscriber|public` over this surface, and a secret-injection
-test proves secret-shaped tags and rationale do not reach subscriber/public
-output.
-
-Projection module: 7 test groups.
-
-### Cost / token-truth — `packages/reactor/src/cost/`
-
-The cost-thesis verification surface is **implemented**.
-`ALLOWED_SURPRISE_CAUSES_V0` pins the three causes;
-`validateReceiptSurpriseAttributionV0` and
-`evaluateSurpriseAttributionCompleteV0` check that every token-bearing receipt
-names a surprise cause; `evaluateFlatSpendUnderStaticV0` checks that spend
-stays flat under a static world. These are the deterministic helpers the
-*cost scales with surprise* invariant is tested against.
-
-### Adapters — `packages/reactor/src/adapters/`
-
-Eight adapters ship, all injected with no hidden defaults (the SDK fails
-closed if a slot is missing): `clock-system` (system + fixed clocks),
-`storage-fs`, `storage-memory`, `model-gateway-record-replay`,
-`agent-sdk-passthrough` (passthrough + null), `sandbox-null`,
-`connector-static`, `event-sink-memory`. The signer adapter is *typed only*
-as `NullReceiptSignatureV0` — there is no cryptographic signer adapter and no
-Postgres storage adapter in the repository. The two adapter seams of the
-Ideal are present and distinct: the **agent-SDK seam**
-(`ReactorAgentSdkAdapterV0`, used by the policy author) and the
-**model-gateway socket** (`ReactorModelGatewayAdapterV0`, used by the judge).
-
-### The Cradle — `packages/reactor-cradle/`
-
-The Cradle is the **evaluation harness**: synthetic worlds, baselines, and
-scenario runner that the cost thesis is measured through. It is not part of
-the shipped runtime.
-
-- **Synthetic worlds** (`world/`, `scenario/`) — `static`,
-  `periodic-surprise`, and `adversarial-silent` profiles; a static world
-  rejects material source changes rather than manufacturing surprise.
-- **Baselines** (`baselines/`) — `no-memo` and `naive-loop` controls plus a
-  `cost-thesis` summary builder. **These are controls, not shipped runtime
-  modes.**
-- **W7 static-world run** (`__tests__/w7-static-cost.integration.test.ts`) —
-  drives a real `createReactor` handle through a static scenario and reads
-  `reactor.receipts()`. Observed token shape: bootstrap real-input
-  `fresh = 41`; evidence-age rechecks `fresh = 0` with positive reused
-  tokens; plan-age audit floor `fresh = 5`. The C5 cost-thesis summary row is
-  **runtime-produced** at `46:46` (fresh:reused) for the Reactor, against
-  the same-unit `92:0` simulated no-memo and `92:0` naive-loop controls.
-- **C5 event-changing run** — Reactor `74:74` runtime-produced, no-memo
-  `148:0` simulated, naive-loop `148:0` control.
-- **K1 live calibration cassette** — `spikes/fixtures/k1-live-recorded.json`
-  is one recorded OpenRouter ensemble spanning
-  `google/gemini-3.1-flash-lite-preview`,
-  `mistralai/mistral-small-3.2-24b-instruct`, and
-  `qwen/qwen-2.5-72b-instruct` (provider + family + size diversity),
-  accepted by the K1 evaluator. This is *recorded calibration evidence*, not
-  a live runtime variable-depth ensemble judging path.
-- **Provider parity** (`provider-parity/`) — two named provider/model paths
-  produce byte-identical policy-artifact bytes with fail-closed provider
-  drift. This is *recorded* provider parity, not live provider support.
-
-### CLI Reactor path — `tools/cli/src/prose/`
-
-`prose serve` is no longer an agent-interpreted Reactor; it runs the
-`@openprose/reactor` package as the typed authority. The bridge
-(`responsibility-reactor.ts`, `repository-serve-reactor-adapters.ts`,
-`repository-serve.ts`, `repository-serve-daemon.ts`) converts local
-responsibility status into Reactor inputs, calls `createReactor`, and mirrors
-compact projections under `state/reactor/` and
-`state/responsibilities/{id}/`. It implements the operational scars:
-crash-window replay (restart after a post-pressure-claim/pre-fulfillment
-crash converges within one cycle), durable pressure dispatch claims,
-restart recovery for scheduled work, and duplicate-trigger dedupe (two
-identical triggers → exactly one Reactor receipt, one pressure record, one
-fulfillment dispatch — surviving distinct HTTP receive timestamps via a
-normalized `triggerDedupeKey`).
-
-> **Note — the CLI cold-start policy is a fixed seed, not yet the package
-> author.** `responsibility-reactor.ts` pins
-> `RESPONSIBILITY_REACTOR_POLICY_REVISION = "1"` and builds the cold-start
-> input itself. The package-level agentic `authorPolicyArtifactV0` is wired
-> and tested in `@openprose/reactor`'s own runtime path, but the CLI's serve
-> loop currently supplies a deterministic cold-start seed. Driving the CLI's
-> serve loop through the agentic author is Roadmap.
-
-### Conformance Ledger
-
-Part I states the invariants as an unqualified north star. This ledger is
-where reality is honest, audited against HEAD `52724ed`. **v0.1 is
-released**: both packages are public on npm at `0.1.0` with provenance, and the
-ledger reports the shipped surface rather than a release candidate.
-
-| Invariant | State | Code-grounded current reality |
-| --- | --- | --- |
-| 1. Markdown is intent | **Conformant** | `*.prose.md` is the sole semantic source. The kernel never interprets source — it consumes a pinned `contract_revision` content hash (`ReceiptCoreV0.contract_revision`). No second authored surface. |
-| 2. Policy is model-authored, compiled, shared | **Conformant for the package runtime; CLI seed is bounded** | `validateKernelPolicyArtifact` + `evaluateBackstops` execute model-authored, validated policy artifacts; cold start invokes `authorPolicyArtifactV0` once through the agent-SDK adapter and persists revision `1`. The tick path runs the recompile/rollback loop (`planAndMaybeExecutePolicyRecompileAfterTick`) and tests prove recompile, min-interval delay, self-trip rollback, and fail-safe missing bytes. The CLI serve adapter still supplies a deterministic cold-start seed instead of invoking the package author path; that is a host-adapter gap, not an absent runtime mechanism. |
-| 3. Adapters are the only reason hosts differ | **Partial — recorded provider parity** | The SDK injects all eight adapters with no hidden defaults and fails closed on a missing slot (verified). The Cradle records two named provider/model paths producing byte-identical policy-artifact bytes with fail-closed provider drift. This is *recorded* parity, not live multi-provider support or cross-storage CI parity. |
-| 4. Activations are bounded | **Conformant** | Continuity lives in durable registry + receipt state read by `tick`/`ingest`; there is no long-running model session anywhere in the runtime. |
-| 5. Cost scales with surprise | **Measured v0.1 with controls** | The W7/C5 Cradle scenarios drive a real `createReactor` handle and read runtime-produced receipts. Static Reactor/no-memo/naive-loop = `46:46` / `92:0` / `92:0`; event-changing = `74:74` / `148:0` / `148:0`. No-memo and naive-loop are controls, not shipped modes. Surprise attribution is enforced per token-bearing receipt by `cost/`. Not yet proven under live multi-provider load. |
-| 6. The judge fails safe | **Partial + one live K1 cassette** | Kernel fail-safe is substantially built and verified: fail-closed seed semantics, three-valued predicate outcomes, bounded-`indeterminate` → `needs-judgment`, every blocked/fail outcome a content-addressed receipt, and uncalibrated non-blocked model verdicts are rewritten to `blocked`/`needs-judgment` rather than emitting a silent confident `up`. **But `runShallowJudgeV0` throws `not-implemented-in-v0.1` for ensemble depth** — the variable-depth, diverse-ensemble, calibration-scored judge is not a runtime path. One live-recorded OpenRouter K1 cassette is accepted by the evaluator. |
-| 7. Receipts are content-addressed | **Conformant for v0 + null-signer** | Receipt v0 content-addressing is real and verified (canonical SHA-256, self-verifying construction, `evidence_input_ids` content-addressed). Tiered projection ships with a passing secret-injection test. **Caveat:** the signing path is null-only by design — a non-null signature is typed but validation-rejected; `cost.provider_norm` is a deferred sub-object. |
-| 8. State is replayable and exitable | **Conformant for the shipped path** | `export()` / `importReactorExitBundleV0` round-trip a runtime-produced log; an imported reactor produces the same next deterministic receipt hash. The CLI adds crash-window replay and duplicate-trigger idempotency. **Caveat:** cross-storage-adapter parity (filesystem vs. an absent Postgres) is not yet a CI gate. |
-
-### What the tests prove — and do not
-
-**Proven today:** `@openprose/reactor` builds, packs, imports, and passes 155
-deterministic tests; the Cradle passes 121; the CLI passes 284. The receipt
-schema, kernel, memoization primitive, forecast scheduler, evidence plan,
-composition, projection tiers, and export/import all have real, passing
-coverage. The CLI runs the package as its Reactor authority and survives the
-crash-window and duplicate-trigger operational scars. The cost-scales-with-
-surprise numbers are runtime-produced against synthetic worlds.
-
-**Not yet proven:** that Reactor-class is the best architecture for target
-domains; that the harness outperforms simpler baselines on real workloads;
-that variable-depth ensemble judging works (it is unimplemented at v0.1);
-that the recurring policy recompile loop holds under live drift; that model
-families behave differently inside the harness under live inference; that
-public projections and receipts are launch-grade; that responsibilities
-converge over long real horizons.
-
-### Honest current limits
-
-- `@openprose/reactor` and `@openprose/reactor-cradle` are published at
-  `0.1.0` with npm provenance. In-repo development still uses workspace links.
-- The variable-depth ensemble judge is **unimplemented** — `runShallowJudgeV0`
-  throws on `depth: "ensemble"`. Calibration grade is always `none` on shipped
-  verdicts.
-- The recurring two-timescale policy loop ships in the package runtime; the CLI
-  serve adapter's cold-start path is still a deterministic seed and does not yet
-  invoke the package policy author.
-- Cross-adapter/replay parity is a local proof, not a required CI gate. There
-  is **no Postgres adapter** in the repository.
-- Cryptographic signing is unimplemented by design; the null signer is the
-  only honest v0.1 state and a non-null signature is validation-rejected.
-- `cost.provider_norm` is a typed but unfilled deferral (Open item I.1).
-- The model matrix (Anthropic/OpenAI/Gemini/Grok) has not been run; baselines
-  and ablations beyond the W7/C5 cost rows are not collected; long-horizon
-  simulations are not a standard suite.
-- The technical report is maintained separately in `openprose/docs`; this
-  directory is the public spec anchor for the release.
-
-> The implementation is a real, tested v0.1 substrate that justifies the
-> category thesis as an architecture. The category should launch publicly
-> only after the evaluation and evidence suite — variable-depth judging, the
-> live model matrix, the recurring policy loop, long-horizon convergence —
-> makes the claim difficult to dismiss.
-
-### Responsibility catalog
-
-Part I keeps one worked example (the Incident Briefing Room); these are the
-others, retained as a catalog. They ship as runnable example contracts under
-`skills/open-prose/examples/`.
+These worked examples were moved out of Part I (one example is enough to teach
+the thesis) but remain a useful catalog. The corresponding contracts ship as
+runnable examples (see Release-Candidate Inventory).
 
 - **Release readiness** — `Goal:` the release candidate is ready to ship;
   check before every planned release and when release evidence changes;
@@ -1274,27 +871,257 @@ others, retained as a catalog. They ship as runnable example contracts under
   surfaced before account reviews; check weekly and on support/CRM/product
   signal change; the value is a maintained risk view, not one classification.
 - **Compliance evidence tracker** — `Goal:` required control evidence is
-  current enough for the next audit; benefits directly from receipts and
-  tiered projection (rich owner evidence, sanitized public proof).
+  current enough for the next audit; benefits directly from receipts and tiered
+  projection (rich owner evidence, sanitized public proof).
 - **Research inbox triage** — `Goal:` new research leads are classified and
   routed each workday; makes model differences visible (some classify better,
   some are cheaper for routine fulfillment).
 
-The boundary with the Language is explicit from both sides: repository IR v0
-is frozen and source-derived, while the policy artifact, token-truth receipts,
-forecasts, and decisions are sibling runtime state owned by
-`@openprose/reactor` — not IR fields and not `*.prose.md` syntax (see
+### Shared Responsibility Package
+
+`@openprose/responsibility` is the shared TypeScript package for responsibility
+judging, forecasting, Reactor decisions, runtime loops, traces, receipts, and
+storage adapters. In the release-candidate state it is no longer merely a
+backend dependency: the CLI imports it and uses it as the typed Reactor
+authority. Under the greenfield decision this package is **prior art**:
+`@openprose/reactor` reimplements the Part I spec from scratch and salvages at
+most interface shapes and the operational scars named above — never the policy
+core.
+
+The package contains:
+
+- pure Reactor decision logic
+- forecast logic
+- contract and protocol types
+- runtime loop machinery
+- filesystem and Postgres adapter surfaces
+- judge protocol interfaces
+- investigation, trace, summary, and receipt shapes
+- storage fencing and replay-oriented records
+
+It is the compiled runtime policy the CLI/server runs.
+
+### CLI Reactor Bridge
+
+The CLI release-candidate branch adds a package-backed Reactor bridge that does
+three jobs:
+
+1. converts local OpenProse responsibility status records into package runtime
+   inputs;
+2. calls the shared Reactor/runtime package to produce decisions, schedules,
+   forecasts, and next actions;
+3. mirrors compact local projections for `prose status` and ordinary
+   fulfillment activations.
+
+Local `prose serve` is no longer an agent-interpreted version of the Reactor
+concept; it uses the same package policy as the backend. The bridge includes:
+
+- package-backed decision recording after judge status
+- package-owned runtime state under the OpenProse root
+- compact local projections under `state/responsibilities/{id}/`
+- status, pressure, and Reactor decision history
+- scheduled judge and fulfillment handling
+- durable pressure dispatch claims
+- restart recovery for scheduled work
+- restart recovery for due but undispatched pressure
+- crash-window replay when status exists without a matching Reactor decision
+- deterministic decision replay from supplied timestamps
+- validation of Reactor decision records
+- line-numbered errors for invalid local Reactor history
+
+This is the first credible form of a single shared policy across hosts.
+
+### Skill-Level Reactor Doctrine
+
+The skill docs are no longer the runtime implementation by proxy; they are the
+doctrine and authoring frame around the package.
+
+| Layer                       | Role                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| SKILL docs                  | Explain how agents should understand responsibilities, Reactor, pressure, and bounded runs |
+| Contract Markdown           | Gives authors the durable source language                                                  |
+| Compiler docs               | Define how source lowers into repository IR                                                |
+| CLI harness                 | Serves compiled IR and calls the shared package                                            |
+| `@openprose/responsibility` | Owns typed Reactor decisions, forecasts, runtime state, and receipts                       |
+
+### Package Consumers
+
+`@openprose/reactor` has one consumer: the CLI/server. The 2026-05-13 judge
+architecture buildout moved the core Reactor, forecast, runtime loop, storage
+adapter, judge protocol, and receipt concepts into the shared package so the
+CLI is glue rather than policy.
+
+- The shared package owns runtime decisions.
+- Postgres is an optional durable storage *adapter* alongside the filesystem
+  default — not a cloud surface; it stores durable cycles, runs, decisions,
+  forecasts, receipts, and projections.
+
+Parity is therefore not CLI-vs-backend but cross-adapter and cross-replay: the
+same package over the same fixtures produces byte-identical policy outputs
+across storage adapters and across runs.
+
+### Conformance Ledger
+
+Part I states the invariants as an unqualified north star. This ledger is where
+reality is honest. Near-term breakage is acceptable when it is recorded with a
+plan; strictness lives in the ideal, the ledger tracks the climb. Every "plan"
+column below is `@openprose/reactor`'s greenfield climb; `@openprose/responsibility`
+appears only as the prior art whose scars informed the plan, never as a base
+being patched.
+
+**2026-05-18 — `@openprose/reactor` v0.1 spine, W1–W6 accepted.** The
+greenfield package's permanent spine (receipt v0 + token-truth substrate,
+deterministic kernel incl. fixed backstops with fail-closed seed semantics,
+rollback-to-last-known-good, cycle detection, the B1/B2/B3 no-anchor additions
+with a model-authored `backstop_divergence_predicate` the kernel only
+evaluates, a bounded-`indeterminate`→`needs-judgment` primitive, the compiled
+evidence plan, the memoization primitive, forecast-gated scheduling, and the
+adapter-injected SDK seam) is implemented and passed an overseer breadth-first
+acceptance review with 37 deterministic tests green via the documented
+command. This is unit/contract-verified substrate, **not** an empirical proof
+of the cost thesis — that remains the v0.1 acceptance gate (the Cradle
+static-world flat-token scenario). Build-out: `planning/plans/2026-05-18-reactor-harness-ideal-architecture/`.
+
+**2026-05-19 — Phase A runtime acceptance landed.** The build now has a
+runtime-produced W7 static-world Cradle path: `runScenarioV0` drives a public
+`createReactor` handle, the passing path reads `reactor.receipts()`, and the
+old hand-built W7 receipt table is out of the acceptance path. Observed token
+shape: bootstrap real input `fresh=41`; evidence-age rechecks `fresh=0` with
+reused tokens; plan-age audit floor `fresh=5`. The same wave added one-shot
+cold-start policy authorship through the agent-SDK adapter and export/import
+registry hydration with a byte-identical next-decision round trip.
+
+**2026-05-20 — B5 live K1 cassette landed.** One OpenRouter K1 ensemble
+recording now exists at
+`packages/reactor-cradle/src/spikes/fixtures/k1-live-recorded.json`. It spans
+`google/gemini-3.1-flash-lite-preview` (small),
+`mistralai/mistral-small-3.2-24b-instruct` (small), and
+`qwen/qwen-2.5-72b-instruct` (large), with provider and family diversity;
+records request ids, response ids, latency, finish reason, usage,
+provider/model names, and spend metadata; and passes the same K1 evaluator as
+the recorded diverse fixture. Actual spend: `0.00022823 USD` under the
+`2.00 USD` cap. Cassette file SHA-256:
+`f64484990635a61a3dcac973a96e97d6433a576ccc297c23742d4a515e2c1868`. This is
+live calibration evidence, not runtime variable-depth ensemble judging.
+
+**2026-05-20 — Wave 1 CLI scars and projections landed.** CLI commit
+`153bab8` landed the release-readiness real source-to-IR compile path, real
+fulfillment artifact path, crash-window replay, and owner/subscriber/public
+status tiers. Gate hardening commit `979bacd` closed the sharper
+duplicate-trigger observable: two identical `POST /release/readiness` triggers
+in one serve cycle now produce exactly one Reactor receipt, one durable
+pressure record, one pressure claim, and one fulfillment dispatch. Reviewer
+repair commit `ddfd023` tightened the operational scars: crash replay now kills
+after a pressure dispatch claim is on disk but before fulfillment completes,
+and duplicate-trigger dedupe now survives distinct HTTP receive timestamps via
+a normalized `triggerDedupeKey`. Follow-up commit `8e68133` makes
+`pressure.latest.json` replay-safe under full-suite load by using an atomic
+latest write and a parseable-pressure test wait. The focused E6 suite is
+8 files / 10 tests green; full CLI suite is 25 files / 263 tests green. This
+closes the local operational-scar and privacy-projection
+substrate for Phase E; it does not claim production ingress/fulfillment/oracle
+or public stranger-run evidence.
+
+| Invariant                                     | State      | Gap / Plan                                                                                                                                                                                                                              |
+| --------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Markdown is intent                         | Conformant | `*.prose.md` is the sole semantic source; the kernel reads source meaning only via the pinned `contract_revision` content hash — no second authored surface                                                                              |
+| 2. Policy is model-authored, compiled, shared | Partial    | Deterministic kernel executes model-authored policy artifacts; runtime cold start now invokes `authorPolicyArtifactV0` once through the agent-SDK adapter and persists revision `1`. The model-authored, recompiled-on-drift two-timescale loop is v0.2 |
+| 3. Adapters are the only reason hosts differ  | Recorded provider parity | SDK seam injects all adapters with no hidden defaults (verified); Phase C recorded two named provider/model paths producing byte-identical policy artifact bytes with fail-closed provider drift. This is recorded provider parity, not live provider support or model quality parity |
+| 4. Activations are bounded                    | Conformant | Continuity lives in durable state; no long-running session                                                                                                                                                                              |
+| 5. Cost scales with surprise                  | Measured v0.1 with controls | Phase C's report table measures the same scenarios through runtime-produced Reactor receipts and deterministic controls. Static Reactor/no-memo/naive-loop is `46:46` / `92:0` / `256:0`; event-changing Reactor/no-memo/naive-loop is `74:74` / `148:0` / `148:0`. The no-memo and naive-loop rows are controls, not shipped runtime modes |
+| 6. The judge fails safe                       | Partial + one live K1 cassette | Kernel fail-safe substantially built & verified: fail-closed seed semantics, degraded-calibration ladder, bounded-`indeterminate`->`needs-judgment`, every fail/blocked outcome a content-addressed receipt. B5 adds one live-recorded OpenRouter K1 cassette accepted by the evaluator (`google/gemini-3.1-flash-lite-preview`, `mistralai/mistral-small-3.2-24b-instruct`, `qwen/qwen-2.5-72b-instruct`; SHA-256 `f64484990635a61a3dcac973a96e97d6433a576ccc297c23742d4a515e2c1868`); runtime variable-depth ensemble judging remains post-launch |
+| 7. Receipts are content-addressed             | Partial + CLI projection tiers | Receipt v0 content-addressing real & verified (canonicalization, `evidence_input_ids` content-addressed, `as_of`/`next_forecast_recheck`, fresh-vs-reused). E15 wires `prose status --tier=owner|subscriber|public`; the secret-injection test proves owner projection can see owner-only receipt data while subscriber/public output does not leak secret-shaped tags or rationale. Signing path is null-only; cross-adapter parity not yet a gate |
+| 8. State is replayable and exitable           | Partial + local operational scars | Runtime receipt logs export/import with registry hydration, and a fresh reactor can import a runtime-produced log then produce the same next receipt hash as the original. E13/E14 add local CLI scars: restart after a post-claim/pre-fulfillment crash converges from durable, atomically written pressure within one cycle, and duplicate identical triggers short-circuit to exactly one fulfillment dispatch. Phase C records memory/filesystem storage parity and an honest Postgres defer until the storage seam becomes async |
+
+The same honesty discipline already applies to null-signer and the unpublished
+package (see Honest Current Limits).
+
+### Existing Tests And Release Checks
+
+- responsibility package unit, runtime, adapter, judge, and type tests
+- CLI unit and integration tests
+- repository IR tests
+- responsibility status and pressure tests
+- package-backed CLI Reactor bridge tests
+- serve daemon scheduling and restart recovery tests
+- CLI crash-window replay and duplicate-trigger idempotency tests
+- owner/subscriber/public projection secret-injection tests
+- package dry-run checks
+- CLI release preflight checks
+- responsibility package pin verification
+- lock-step intent around exact package content hashes
+
+What they prove: the package can be built, packed, imported, tested; the CLI
+uses the package instead of a separate local policy; local state records are
+validated and replayable; scheduling, pressure dispatch, and restart recovery
+work for important local cases; release packaging can be checked before publish.
+
+What they do not yet prove: Reactor-class is the best architecture for target
+domains; the harness outperforms simpler baselines; forecasts improve cost,
+freshness, or reliability; hysteresis reduces oscillation under noisy judgment;
+model families behave differently inside the harness; public projections and
+receipts are robust enough for a technical report; real-world case studies
+converge over long horizons; **cost scales with surprise** under measurement.
+
+### Release-Candidate Inventory
+
+| Area               | Location                                                                                                | Current Role                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Shared package     | `platform/packages/responsibility/`                                                                     | Core types, Reactor, forecast, runtime loop, storage adapters, judges, traces, summaries, receipts                            |
+| Reactor policy     | `platform/packages/responsibility/src/core/reactor.ts`                                                  | Typed decision policy: scheduling judges, fulfillment, retry, escalation, human review, quiescence                            |
+| Forecast policy    | `platform/packages/responsibility/src/core/forecast.ts`                                                 | Drift and truth-probability forecasting used to pull future checks earlier                                                    |
+| Runtime loop       | `platform/packages/responsibility/src/runtime/loop.ts`                                                  | Shared runtime loop used by cloud and local adapter compositions                                                              |
+| Filesystem adapter | `platform/packages/responsibility/src/adapters/storage-fs.ts`                                           | Local durable package state for the CLI harness                                                                               |
+| Postgres adapter   | `platform/packages/responsibility/src/adapters/storage-pg.ts`                                           | Cloud durable package state for the API backend                                                                               |
+| CLI bridge         | `platform/external/prose/tools/cli/src/prose/responsibility-reactor.ts`                                 | Converts local judge status into package runtime inputs; mirrors decisions into local projections                             |
+| CLI serve loop     | `platform/external/prose/tools/cli/src/prose/repository-serve.ts`                                       | Launches bounded judge and fulfillment activations, records package-backed Reactor decisions                                  |
+| CLI daemon         | `platform/external/prose/tools/cli/src/prose/repository-serve-daemon.ts`                                | Schedules judge and fulfillment actions, restores pending work, replays crash-window status                                   |
+| Local pressure     | `platform/external/prose/tools/cli/src/prose/responsibility-pressure.ts`                                | Durable pressure projection and dispatch claim support                                                                        |
+| Local status       | `platform/external/prose/tools/cli/src/prose/responsibility-status.ts`                                  | Judge status records, confidence, coverage, timestamp validation                                                              |
+| Local status view  | `platform/external/prose/tools/cli/src/prose/repository-status.ts`                                      | `prose status` projection over IR, status, pressure, Reactor decisions                                                        |
+| Skill doctrine     | `platform/external/prose/skills/open-prose/responsibility-runtime.md`                                   | Agent-facing Responsibility Runtime with package-backed Reactor semantics                                                     |
+| Reactor concept    | `platform/external/prose/skills/open-prose/concepts/reactor.md`                                         | Conceptual definition of evented reconciliation, status, pressure, cadence, fulfillment                                       |
+| Contract docs      | `platform/external/prose/skills/open-prose/contract-markdown.md`                                        | Markdown source contract surface for responsibilities and gateways                                                            |
+| CLI package        | `platform/external/prose/tools/cli/package.json`                                                        | Public CLI package depending on `@openprose/responsibility`                                                                   |
+| Backend pin        | `platform/apps/api/.openprose-pin.json`                                                                 | Content hash tying the backend to the expected responsibility package artifact                                                |
+| CLI tests          | `platform/external/prose/tools/cli/tests/prose/`                                                        | Repository IR, serve, status, pressure, Reactor bridge coverage                                                               |
+| Package tests      | `platform/packages/responsibility/src/**/__tests__/` and `platform/packages/responsibility/test-types/` | Core/runtime/adapter/judge/type coverage                                                                                      |
+| Examples           | `platform/external/prose/skills/open-prose/examples/`                                                   | Runnable responsibility examples for release readiness, incidents, customer risk, compliance, inbox triage, and related loops |
+
+This is enough to say the Reactor-class harness exists as software. It is not
+yet enough to say the public category claim is proven.
+
+The boundary with the language is explicit and stated from both sides:
+repository IR v0 is frozen and source-derived, while the policy artifact,
+token-truth receipts, forecasts, and decisions are sibling runtime state owned
+by `@openprose/reactor` — not IR fields and not `*.prose.md` syntax (see
 [01-Language.md](./01-Language.md) Part II "Repository IR v0" and Part III §3).
+
+### Honest Current Limits
+
+- `@openprose/reactor` must be published publicly before the CLI release
+  can depend on it cleanly.
+- Cross-adapter/replay parity should become a required CI gate, not only a local proof.
+- The model matrix has not been run across Anthropic, OpenAI, Gemini, and Grok.
+- Baselines and ablations have not been collected.
+- Long-horizon responsibility simulations are not yet a standard suite.
+- Public receipts and projection guarantees need launch-grade evidence.
+- The two-timescale policy loop, variable-depth judging, token-truth receipts,
+  and composition-via-receipts are designed (Part I) but not yet implemented.
+- The technical report has not been written from measured results.
+- "Reactor-class harness" is not yet pinned to a formal public spec and
+  evaluation methodology.
+
+> The implementation is strong enough to justify the category thesis. The
+> category should launch only after the evaluation and evidence suite makes the
+> claim difficult to dismiss.
 
 ---
 
-## III. Roadmap — the Delta from Current to Ideal
+## III. What Is Next
 
-`Ideal − Current = Roadmap`. This is the honest gap: what bridges the v0.1
-substrate of Part II to the Reactor-class harness of Part I, and what must
-ship before OpenProse publicly launches the term with a technical report.
-Turn the Reactor-class harness from a plausible, tested architecture into a
-published technical claim.
+Turn the Reactor-class harness from a plausible architecture into a published
+technical claim.
 
 ### Launch Standard
 
