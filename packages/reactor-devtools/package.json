@@ -1,6 +1,11 @@
 {
   "name": "@openprose/reactor-devtools",
   "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openprose/prose.git",
+    "directory": "packages/reactor-devtools"
+  },
   "license": "MIT",
   "description": "DevTools / visualization for the @openprose/reactor harness: replays a saved receipt ledger and animates the DAG (flashes on render, dim pulses on memo-skip, per-facet edge lights, a fresh-vs-reused token/$ meter).",
   "type": "commonjs",
