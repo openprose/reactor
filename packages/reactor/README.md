@@ -66,7 +66,7 @@ explicit null state (`{ scheme: "none", null_reason: "no-signer-adapter-configur
 a real signing adapter is named roadmap. The library refuses to claim a
 signature scheme it doesn't have. The cryptographic byte-hash signer — binding
 `world-models/*/published.json` to its receipt so cross-boundary composition is
-non-repudiable — is **targeted for 2026 H2** (tracked as `C3` in the Reactor backlog).
+non-repudiable — is **tracked but not yet scheduled** (`C3` in the Reactor backlog).
 
 ## SDK quickstart
 
