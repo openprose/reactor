@@ -18,6 +18,15 @@ const POISON = ["46:46", "92:0", "256:0", "74:74", "0.00022823", "K1"];
 // published results, REPORT.md, and all other source.
 const SKIP_FILES = new Set(["guards.cjs", "prereg.cjs", "prereg.json", "prereg.hash"]);
 
+// A poison token counts only when it stands alone — not when it sits inside a
+// longer alnum run. Without this, "256:0" false-matches the "sha256:0…" content-
+// hash prefix that saturates every receipt ledger (a reused FIGURE is still
+// caught; a hash digest is not).
+function containsPoisonToken(text, token) {
+  const esc = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![A-Za-z0-9])${esc}(?![0-9A-Za-z])`).test(text);
+}
+
 function walk(dir, acc) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.name === "node_modules" || e.name === "runs" || e.name === ".git") continue;
@@ -37,7 +46,7 @@ function runGuards(root) {
     // results/surprise-cost.json + REPORT.md are the published surfaces — scan them.
     const text = fs.readFileSync(f, "utf8");
     for (const p of POISON) {
-      if (text.includes(p)) poisonHits.push({ file: path.relative(root, f), token: p });
+      if (containsPoisonToken(text, p)) poisonHits.push({ file: path.relative(root, f), token: p });
     }
   }
 
