@@ -1,15 +1,18 @@
-# Vendored open-prose skill (frozen)
+# Vendored open-prose skill (pinned)
 
 `skills/open-prose/` is a snapshot of the OpenProse skill, vendored from
 [`openprose/prose`](https://github.com/openprose/prose) at commit
 `779138a615e84c93146dcbee962861feafbad307` — skill **0.15.0**,
 `runtime_contract: 2`, the tag `skill-v0.15.0` and the `reactor-v0.3.2-cli.0.2.3`
-release point. It is the version Reactor was validated against and the last one
-that documents the `prose react` flow and the `reactor.md` operator guide.
+release point. It is the version Reactor was validated against and the one that
+documents the `prose react` flow and the `reactor.md` operator guide.
 
-It is **frozen on purpose.** Reactor is deprecated and on ice; the skill keeps
-evolving in `openprose/prose`. Do not sync this tree forward: a newer skill may
-route differently, and the harness has not been exercised against it.
+It is **pinned on purpose.** The skill keeps evolving in `openprose/prose`, and
+a newer skill may route differently than the one the harness was exercised
+against. The snapshot is never tracked live: it is bumped deliberately, as a
+reviewed change with the harness re-run against it, following the steps in
+[`RELEASE.md`](../RELEASE.md). Do not edit files under `skills/open-prose/`
+directly — skill changes belong in `openprose/prose`.
 
 ## Why it is here
 
@@ -29,5 +32,5 @@ history in this repository; the snapshot overlays them byte-for-byte.
 
 ## Pointing the harness at a newer skill
 
-`REACTOR_SKILL_PATH=<dir or SKILL.md>` overrides the lookup. That is an
-unvalidated configuration for a deprecated harness; use it knowingly.
+`REACTOR_SKILL_PATH=<dir or SKILL.md>` overrides the lookup. The harness has
+not been validated against skills newer than the pinned one; use it knowingly.

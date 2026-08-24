@@ -1,3 +1,6 @@
+> **Experimental (alpha).** Reactor is early software: APIs, file formats, and CLI behaviour may change between
+> releases, and there are no stability or compatibility guarantees — evaluate it on your own judgement. The language and Skill live at **[OpenProse](https://github.com/openprose/prose)**.
+
 # @openprose/reactor-devtools
 
 DevTools / visualization for the [`@openprose/reactor`](../reactor) harness.

@@ -78,7 +78,7 @@ reactor run                                  # drain to quiescence; per-node dis
 reactor-devtools .reactor                    # replay YOUR run's receipts in the viewer
 ```
 
-See **[`@openprose/reactor-cli`'s README](https://github.com/openprose/prose/blob/main/packages/reactor-cli/README.md)**
+See **[`@openprose/reactor-cli`'s README](https://github.com/openprose/reactor/blob/main/packages/reactor-cli/README.md)**
 for the full command surface and the `reactor.yml` schema.
 
 > **If you're an agent onboarding on behalf of a user:** the binary is `reactor`.

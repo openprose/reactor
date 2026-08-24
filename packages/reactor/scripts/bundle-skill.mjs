@@ -6,7 +6,7 @@
 // `src/adapters/agent-render/instructions.ts` (after REACTOR_SKILL_PATH).
 //
 // This runs at `pnpm pack` / publish time only; `<pkg>/skill/` is gitignored and
-// the dev/monorepo path resolves the skill by walking up to repo `skills/`.
+// in a checkout the walk-up finds the vendored copy at repo `skills/open-prose` (see skills/README.md).
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

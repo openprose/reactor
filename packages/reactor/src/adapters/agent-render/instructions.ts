@@ -36,7 +36,7 @@ import type { RenderContext } from "../../sdk/render-atom";
  *   1. `REACTOR_SKILL_PATH` — explicit override (a `SKILL.md` file or its dir).
  *   2. A copy bundled into this package at pack time (`<pkg>/skill/open-prose`),
  *      so a bare `npm i @openprose/reactor` carries its own render VM.
- *   3. The monorepo source checkout — walk up for `skills/open-prose/SKILL.md`.
+ *   3. The repository checkout — walk up for the vendored `skills/open-prose/SKILL.md`.
  *   4. A skill installed via `npx skills add openprose/prose` — the standard host
  *      skill dirs (`~/.claude`, `~/.codex`, `~/.agents`).
  * If none exist, return the first standard install path so the missing-bundle
@@ -54,7 +54,7 @@ function resolveSkillMarkdownPath(): string {
   candidates.push(
     join(__dirname, "..", "..", "..", "skill", "open-prose", "SKILL.md"),
   );
-  // 3. monorepo source checkout: walk up for skills/open-prose/SKILL.md.
+  // 3. repository checkout: walk up for the vendored skills/open-prose/SKILL.md.
   let dir = __dirname;
   for (let i = 0; i < 8; i++) {
     candidates.push(join(dir, "skills", "open-prose", "SKILL.md"));

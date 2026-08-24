@@ -1,3 +1,6 @@
+> **Experimental (alpha).** Reactor is early software: APIs, file formats, and CLI behaviour may change between
+> releases, and there are no stability or compatibility guarantees — evaluate it on your own judgement. The language and Skill live at **[OpenProse](https://github.com/openprose/prose)**.
+
 # @openprose/reactor
 
 **`React.memo` applied to expensive LLM work: cost scales with surprise, not the clock.**
@@ -39,7 +42,7 @@ npm install @openprose/reactor
 
 Most users should start with the CLI, which compiles, runs, and inspects a
 project for you. See the
-**[`@openprose/reactor-cli` README](https://github.com/openprose/prose/blob/main/packages/reactor-cli/README.md)**
+**[`@openprose/reactor-cli` README](https://github.com/openprose/reactor/blob/main/packages/reactor-cli/README.md)**
 for the full `init → doctor → compile → run` quickstart and the keyless
 `reactor-devtools` replay.
 

@@ -1,14 +1,14 @@
 {
   "name": "@openprose/reactor-cli",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openprose/prose.git",
+    "url": "git+https://github.com/openprose/reactor.git",
     "directory": "packages/reactor-cli"
   },
   "license": "MIT",
   "type": "commonjs",
-  "description": "Deterministic command-line driver for the @openprose/reactor SDK.",
+  "description": "Deterministic command-line driver for the @openprose/reactor SDK. (alpha — experimental, no stability guarantees; see https://github.com/openprose/prose)",
   "main": "dist/cli.js",
   "bin": {
     "reactor": "dist/cli.js"

@@ -1,3 +1,6 @@
+> **Experimental (alpha).** Reactor is early software: APIs, file formats, and CLI behaviour may change between
+> releases, and there are no stability or compatibility guarantees — evaluate it on your own judgement. The language and Skill live at **[OpenProse](https://github.com/openprose/prose)**.
+
 # @openprose/reactor-evals — the SURPRISE-COST benchmark
 
 The FR-3 "the bet": the first **preregistered, falsifiable, equal-correctness-gated**

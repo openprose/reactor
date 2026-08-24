@@ -1,7 +1,7 @@
 {
   "name": "@openprose/reactor",
-  "version": "0.3.2",
-  "description": "OpenProse Reactor runtime: fresh model spend scales with surprise, not the clock.",
+  "version": "0.3.3",
+  "description": "OpenProse Reactor runtime: fresh model spend scales with surprise, not the clock. (alpha — experimental, no stability guarantees; see https://github.com/openprose/prose)",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -58,7 +58,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openprose/prose.git",
+    "url": "git+https://github.com/openprose/reactor.git",
     "directory": "packages/reactor"
   },
   "scripts": {
