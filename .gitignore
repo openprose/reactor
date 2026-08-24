@@ -1,0 +1,12 @@
+# Node and TypeScript build output
+node_modules/
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+
+# Reactor project state written by `reactor run` / `reactor serve`
+.reactor/
+
+# Local agent overrides — never checked in
+AGENTS.override.md
+CLAUDE.local.md

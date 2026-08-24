@@ -1,23 +1,26 @@
 name: CI - Reactor packages
 
+# The one workflow for this repository. Everything here is Reactor, so there
+# are no path filters: every PR and every push to main runs the whole gate.
+#
+# All of it is DETERMINISTIC and OFFLINE (REACTOR_OFFLINE=1): the package test
+# suites, the example replay suites under tests/open-prose/examples/** (which
+# drive the reconciler over committed replay state-dirs), and the eval-harness
+# deterministic checker. The key-gated LLM judge panel is NEVER run here — no
+# OPENROUTER_API_KEY secret is wired in, so it stays a passing-skipped no-op.
+#
+# Publishing to npm happens only on `reactor-v*` tags, through OIDC trusted
+# publishing (see the `publish` job and RELEASE.md).
+
 on:
   pull_request:
-    paths:
-      - "packages/reactor/**"
-      - "packages/reactor-cli/**"
-      - "packages/reactor-devtools/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".github/workflows/ci-reactor-package.yml"
   push:
     branches: [main]
     tags:
       - "reactor-v*"
 
 concurrency:
-  group: ci-reactor-package-${{ github.head_ref || github.ref }}
+  group: ci-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -25,10 +28,14 @@ permissions:
 
 jobs:
   ci:
-    # NOTE: this job name is a required status check on the release PR — do not rename.
+    # NOTE: this job name is the required status check on main — do not rename.
     name: CI - Reactor Package
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    env:
+      # Force the offline path everywhere: no network, no model spend, and the
+      # LLM judge panel stays a passing-skipped no-op (no key resolvable).
+      REACTOR_OFFLINE: "1"
 
     steps:
       - name: Checkout
@@ -70,13 +77,15 @@ jobs:
         continue-on-error: true
 
       - name: Build reactor packages
-        run: |
-          pnpm --filter @openprose/reactor build
-          pnpm --filter @openprose/reactor-cli build
-          pnpm --filter @openprose/reactor-devtools build
+        run: pnpm build
 
       - name: Test reactor packages (offline, zero model spend)
         run: pnpm test:reactor:offline
+
+      - name: Example suites + eval-harness (offline)
+        # The example replay tests alias @openprose/reactor to the dist built
+        # above (see vitest.config.ts) — the SAME bytes a consumer imports.
+        run: pnpm test:examples
 
       - name: Pack reactor packages (validates publishability)
         id: pack
@@ -152,10 +161,7 @@ jobs:
         # Without this, an already-published reactor short-circuits before its pack
         # builds `reactor/dist`, and reactor-cli / reactor-devtools then fail to resolve
         # `@openprose/reactor` (TS2307). Order matters: the SDK first.
-        run: |
-          pnpm --filter @openprose/reactor build
-          pnpm --filter @openprose/reactor-cli build
-          pnpm --filter @openprose/reactor-devtools build
+        run: pnpm build
 
       - name: Publish reactor packages
         # OIDC trusted publishing: npm (>=11.5.1) exchanges the GitHub Actions id-token
@@ -163,10 +169,10 @@ jobs:
         # support, so we pnpm-PACK each package (which rewrites its `workspace:*` SDK
         # dependency to the concrete version and runs the prepack build) and then
         # `npm publish` the resulting tarball.
-        # Each package publishes at its own package.json version (they diverge: reactor
-        # 0.2.0, reactor-cli 0.1.0, reactor-devtools 0.1.0); already-published versions are
-        # skipped so re-runs are idempotent. Order matters — reactor first, because cli +
-        # devtools depend on the concrete reactor version.
+        # Each package publishes at its own package.json version (they diverge);
+        # already-published versions are skipped so re-runs are idempotent. Order
+        # matters — reactor first, because cli + devtools depend on the concrete
+        # reactor version.
         run: |
           set -euo pipefail
           pack_dir="${RUNNER_TEMP}/reactor-publish"
