@@ -54,7 +54,12 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/open-prose/**/*.test.ts"],
+    include: [
+      "tests/open-prose/**/*.test.ts",
+      "skills/open-prose/examples/feedback-pulse/feedback-pulse.test.ts",
+      "skills/open-prose/examples/press-desk/press-desk.test.ts",
+      "skills/open-prose/examples/support-inbox-router/support-inbox-router.test.ts",
+    ],
     // Tier-3 live tests are key-gated and never run in the offline gate.
     exclude: ["**/*.live.test.ts", "**/node_modules/**"],
   },
