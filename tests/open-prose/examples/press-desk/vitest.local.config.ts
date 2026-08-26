@@ -26,8 +26,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
-      "skills/open-prose/examples/press-desk/press-desk.test.ts",
-      "skills/open-prose/examples/press-desk/press-desk.live.test.ts",
+      "tests/open-prose/examples/press-desk/press-desk.test.ts",
+      "tests/open-prose/examples/press-desk/press-desk.live.test.ts",
     ],
     exclude: ["**/node_modules/**"],
   },

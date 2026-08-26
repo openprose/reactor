@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-// Local, single-example vitest config for feedback-pulse. Mirrors the root
+// Local, single-example vitest config for support-inbox-router. Mirrors the root
 // config's reactor-dist aliasing so the public `@openprose/reactor` subpaths
 // resolve to the prebuilt workspace dist, and scopes the run to THIS example's
 // tests (the deterministic tier-2 gate + the key-gated tier-3 live test, which
@@ -26,8 +26,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
-      "skills/open-prose/examples/feedback-pulse/feedback-pulse.test.ts",
-      "skills/open-prose/examples/feedback-pulse/feedback-pulse.live.test.ts",
+      "tests/open-prose/examples/support-inbox-router/support-inbox-router.test.ts",
+      "tests/open-prose/examples/support-inbox-router/support-inbox-router.live.test.ts",
     ],
     exclude: ["**/node_modules/**"],
   },
