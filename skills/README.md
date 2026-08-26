@@ -26,9 +26,10 @@ render session. Two code paths find it by walking up the directory tree for
 - `packages/reactor/src/adapters/agent-render/instructions.ts` resolves it at
   runtime as the third candidate, after `REACTOR_SKILL_PATH` and the bundled copy.
 
-The three example directories that carry replay test kits
-(`examples/{feedback-pulse,press-desk,support-inbox-router}`) have their own
-history in this repository; the snapshot overlays them byte-for-byte.
+The snapshot omits one thing the source tree carried at that commit: the replay
+test kits that sat inside `examples/{feedback-pulse,press-desk,support-inbox-router}`.
+They are this harness's tests, not skill content, and live with the other example
+suites under `tests/open-prose/examples/`.
 
 ## Pointing the harness at a newer skill
 
