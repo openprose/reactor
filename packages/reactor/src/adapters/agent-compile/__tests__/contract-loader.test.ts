@@ -78,6 +78,28 @@ test("sliceContract: a gateway kind is read from frontmatter", () => {
   equal(c.kind, "gateway");
 });
 
+test("sliceContract: an inline comment on a frontmatter field is not part of the value", () => {
+  // Without stripping the inline comment, kind becomes "gateway # exposes a webhook"
+  // and normalizeKind silently falls back to the default "responsibility".
+  const c = sliceContract(
+    "---\nname: ingress # the edge node\nkind: gateway # exposes a webhook\n---\n### Maintains\nx\n",
+    "/x/g.prose.md",
+  );
+  equal(c.kind, "gateway");
+  equal(c.name, "ingress");
+});
+
+test("sliceContract: a '#' that is not a comment stays in the value", () => {
+  // '#' only opens a comment when preceded by whitespace; a quoted value keeps
+  // its '#' literally.
+  const c = sliceContract(
+    '---\nid: issue#42\nname: "release #1"\n---\n### Maintains\nx\n',
+    "/x/g.prose.md",
+  );
+  equal(c.id, "issue#42");
+  equal(c.name, "release #1");
+});
+
 test("defaultWakeSource: gateway → external; cadence → self; else input", () => {
   const gw: LoadedContract = { id: "g", name: "g", kind: "gateway", path: "/g" };
   equal(defaultWakeSource(gw), "external");

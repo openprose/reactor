@@ -251,7 +251,19 @@ function parseFlatFrontmatter(frontmatter: string): Record<string, string> {
       continue;
     }
     const key = line.slice(0, colon).trim();
-    const value = unquote(line.slice(colon + 1).trim());
+    let rawValue = line.slice(colon + 1).trim();
+    // An inline YAML comment (' #…', the '#' preceded by whitespace) is not part
+    // of the value. Full-line comments are already skipped above; without this a
+    // commented field such as `kind: gateway # note` keeps the comment as its
+    // value and, for `kind`, falls back to the default. A '#' inside a quoted
+    // scalar, or one not preceded by whitespace, stays literal.
+    if (!rawValue.startsWith('"') && !rawValue.startsWith("'")) {
+      const comment = rawValue.search(/\s#/);
+      if (comment !== -1) {
+        rawValue = rawValue.slice(0, comment);
+      }
+    }
+    const value = unquote(rawValue.trim());
     if (key.length > 0 && value.length > 0 && out[key] === undefined) {
       out[key] = value;
     }
