@@ -68,6 +68,19 @@ export interface BootHostOptions extends ConfigOverrides {
    * A single-reactor host uses the name `"default"`.
    */
   readonly testSeams?: Readonly<Record<string, PerReactorTestSeam>>;
+  /**
+   * Receives each reactor whose poll, gateway poll or shutdown rejected. With a
+   * handler the host keeps serving the other reactors and resolves; without one
+   * the first failure is rethrown, but only once every reactor has settled.
+   */
+  readonly onReactorError?: (failure: ReactorFailure) => void;
+}
+
+/** One hosted reactor's rejected poll, gateway poll or shutdown. */
+export interface ReactorFailure {
+  readonly name: string;
+  readonly phase: 'poll' | 'gateways' | 'shutdown';
+  readonly error: unknown;
 }
 
 /** A running multi-reactor host: the isolated handles + the across-reactor pool. */
@@ -181,20 +194,51 @@ export async function bootHost(options: BootHostOptions = {}): Promise<HostHandl
   const pool = createWorkerPool(options.concurrency ?? 1);
   const byNameMap = new Map(handles.map((h) => [h.name, h] as const));
 
+  // Reactors are isolated: one reactor's rejection must not cut the others'
+  // work short, so every per-reactor task settles before failures are handled.
+  // With `onReactorError` each failure is handed over and the host carries on;
+  // without it the first failure is rethrown once everything has settled.
+  const settleAll = async <T>(
+    phase: ReactorFailure['phase'],
+    run: (handle: ServeHandle) => Promise<T>,
+  ): Promise<readonly T[]> => {
+    const settled = await Promise.allSettled(handles.map((h) => run(h)));
+    const fulfilled: T[] = [];
+    let firstError: { error: unknown } | undefined;
+    settled.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        fulfilled.push(result.value);
+        return;
+      }
+      const failure: ReactorFailure = {
+        name: handles[i]!.name,
+        phase,
+        error: result.reason,
+      };
+      if (options.onReactorError !== undefined) {
+        options.onReactorError(failure);
+      } else {
+        firstError ??= { error: result.reason };
+      }
+    });
+    if (firstError !== undefined) {
+      throw firstError.error;
+    }
+    return fulfilled;
+  };
+
   const pollAll = async (now: string): Promise<void> => {
     // Submit each reactor's poll to the across-reactor pool (bounded parallel);
     // each poll is itself serialized behind that reactor's own queue.
-    await Promise.all(
-      handles.map((h) => pool.submit(() => h.pollOnce(now))),
-    );
+    await settleAll('poll', (h) => pool.submit(() => h.pollOnce(now)));
   };
 
   const pollGatewaysAll = async (now: string): Promise<readonly GatewayPollOutcome[]> => {
     // Each reactor's gateway poll is submitted to the across-reactor pool; the
     // poll itself enqueues onto that reactor's serialization queue (correction #4),
     // so within a reactor a gateway poll never overlaps a continuity poll/trigger.
-    const perReactor = await Promise.all(
-      handles.map((h) => pool.submit(() => h.pollGatewaysOnce(now))),
+    const perReactor = await settleAll('gateways', (h) =>
+      pool.submit(() => h.pollGatewaysOnce(now)),
     );
     return perReactor.flat();
   };
@@ -209,8 +253,18 @@ export async function bootHost(options: BootHostOptions = {}): Promise<HostHandl
   };
 
   const shutdown = async (): Promise<void> => {
-    await Promise.all(handles.map((h) => h.shutdown()));
+    // Drain every reactor before surfacing a failed shutdown, so one reactor's
+    // rejection never leaves another's in-flight work undrained.
+    let failure: unknown;
+    try {
+      await settleAll('shutdown', (h) => h.shutdown());
+    } catch (err) {
+      failure = err;
+    }
     await pool.onIdle();
+    if (failure !== undefined) {
+      throw failure;
+    }
   };
 
   return {
