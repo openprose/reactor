@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `reactor serve` no longer takes every hosted reactor down when one reactor's
+  continuity poll, gateway poll or shutdown rejects: the host settles every
+  reactor before handling failures, the failing reactor is reported (`reactor
+  <name>: poll failed: <message>`, with the categorized error event sampled once
+  per reactor), and the other reactors keep being served. `bootHost` gains an
+  `onReactorError` handler; without one the first failure is still rethrown, but
+  only once every reactor has settled.
+
 ## [reactor 0.3.3 / reactor-cli 0.2.4 / reactor-devtools 0.3.1] - 2026-08-24
 
 Metadata release from the standalone repository. No runtime changes.
