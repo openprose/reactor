@@ -127,6 +127,14 @@ export {
   type ContinuityPollResult,
 } from "./continuity-scheduler";
 
+// --- The wake constructors & combiner (one event type, three sources) -------
+export {
+  externalWake,
+  selfWake,
+  inputWake,
+  mergeWakes,
+} from "./wake";
+
 // --- The run-phase reconciler (the sibling module) --------------------------
 // Re-exported so the front door is the single import surface for mounting a DAG
 // by hand against custom ports (architecture.md §5.3: the injection boundary).

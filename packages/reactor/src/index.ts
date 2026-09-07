@@ -154,6 +154,7 @@ export {
   externalWake,
   selfWake,
   inputWake,
+  mergeWakes,
 } from "./sdk/wake";
 
 // ── Ingress — deliver an external input + arm connectors (§5.6 / decision #7) ─

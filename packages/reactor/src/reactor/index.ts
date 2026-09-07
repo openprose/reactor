@@ -56,6 +56,7 @@ import {
   makeMemoKey,
 } from "../shapes";
 import { redactSecrets } from "../redact";
+import { mergeWakes } from "../sdk/wake";
 
 // ===========================================================================
 // Seam ports — the injection boundary (architecture.md §5.3).
@@ -302,7 +303,7 @@ interface NodeFlightState {
   inFlight: boolean;
   /** Set when a wake lands mid-render; the single coalesced follow-up consumes it. */
   dirty: boolean;
-  /** The most recent wake observed while in flight — the follow-up renders against it. */
+  /** The coalesced wake observed while in flight (merged across all mid-render wakes) — the follow-up renders against it. */
   pendingWake: Wake | null;
 }
 
@@ -480,7 +481,11 @@ export function createReconciler(
     const done = new Set<string>(); // fired OR pruned — removed from the frontier
     const moved = new Set<string>(); // a fired dirty producer propagated to this node
     const wakeFor = new Map<string, Wake>();
-    for (const e of initial) wakeFor.set(String(e.node), e.wake);
+    for (const e of initial) {
+      const key = String(e.node);
+      const prev = wakeFor.get(key);
+      wakeFor.set(key, prev !== undefined ? mergeWakes(prev, e.wake) : e.wake);
+    }
     const maxIter = drainNodeIds.length * 4 + 16;
     let guard = 0;
 
@@ -538,7 +543,8 @@ export function createReconciler(
                   "the precomputed dirty closure is incomplete (topology/propagation bug).",
               );
             }
-            wakeFor.set(target, p.wake);
+            const prev = wakeFor.get(target);
+            wakeFor.set(target, prev !== undefined ? mergeWakes(prev, p.wake) : p.wake);
             moved.add(target);
           }
         }
@@ -572,7 +578,8 @@ export function createReconciler(
     const state = flightFor(node);
     if (state.inFlight) {
       state.dirty = true;
-      state.pendingWake = wake;
+      state.pendingWake =
+        state.pendingWake !== null ? mergeWakes(state.pendingWake, wake) : wake;
       return { node, disposition: "coalesced", propagated: [] };
     }
 
@@ -688,7 +695,8 @@ export function createReconciler(
     const state = flightFor(node);
     if (state.inFlight) {
       state.dirty = true;
-      state.pendingWake = wake;
+      state.pendingWake =
+        state.pendingWake !== null ? mergeWakes(state.pendingWake, wake) : wake;
       return { node, disposition: "coalesced", propagated: [] };
     }
 
