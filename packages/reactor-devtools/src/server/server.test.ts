@@ -16,7 +16,16 @@
 import { strict as assert } from "node:assert";
 import { test, before, after } from "node:test";
 import { join } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+
+import {
+  createFileSystemWorldModelStore,
+  files,
+  jsonFile,
+  ATOMIC_FACET,
+  type Fingerprint,
+} from "@openprose/reactor";
 
 import {
   startDevToolsServer,
@@ -225,5 +234,74 @@ test("path traversal is rejected (no escaping the assets dir)", async () => {
   if (status === 200) {
     const body = await res.text();
     assert.ok(!body.includes("@openprose/reactor-devtools"), "did not leak package.json");
+  }
+});
+
+test("GET /api/node/:id?version resolves when version is an atomic fingerprint alias (distinct from store version)", async () => {
+  const tmp = mkdtempSync(join(tmpdir(), "devtools-alias-test-"));
+  try {
+    const wmDir = join(tmp, "world-models");
+    const store = createFileSystemWorldModelStore({ directory: wmDir });
+
+    const atomicFp = "sha256:2222222222222222222222222222222222222222222222222222222222222222" as Fingerprint;
+
+    // Commit under artifact content version with a custom atomic fingerprint that differs
+    const commit = store.commitPublished(
+      "worker-node",
+      files({ "output.json": jsonFile({ status: "success" }) }),
+      () => ({
+        [ATOMIC_FACET]: atomicFp,
+      }),
+    );
+
+    assert.notEqual(commit.version, atomicFp, "atomic fingerprint must differ from artifact version");
+
+    // Write minimal receipts.json referencing this atomic version in receipts
+    const receipts = [
+      {
+        schema: "openprose.receipt",
+        node: "worker-node",
+        status: "rendered",
+        hash_algorithm: "sha256",
+        contract_fingerprint: "contract:worker-node@v1",
+        fingerprints: {
+          [ATOMIC_FACET]: atomicFp,
+        },
+        input_fingerprints: [],
+        cost: {
+          model: "none",
+          provider: "none",
+          surprise_cause: "external",
+          tokens: { fresh: 0, reused: 0 },
+        },
+        wake: { refs: [], source: "external" },
+        prev: null,
+        semantic_diff: {},
+        sig: { scheme: "none", null_reason: "no-signer-adapter-configured" },
+      },
+    ];
+    writeFileSync(join(tmp, "receipts.json"), JSON.stringify(receipts, null, 2), "utf-8");
+
+    const server = await startDevToolsServer({ stateDir: tmp, port: 0 });
+    try {
+      // Fetch by atomicVersion query param (as DevTools S4 inspector does)
+      const url = new URL("/api/node/worker-node", server.url);
+      url.searchParams.set("version", atomicFp);
+
+      const res = await fetch(url);
+      assert.equal(res.status, 200, "alias query must resolve with 200");
+      const data = (await res.json()) as {
+        node: string;
+        version: string;
+        files: { path: string; text: string | null }[];
+      };
+      assert.equal(data.node, "worker-node");
+      assert.equal(data.files.length, 1);
+      assert.equal(data.files[0]!.path, "output.json");
+    } finally {
+      await server.close();
+    }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
 });

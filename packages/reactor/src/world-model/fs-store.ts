@@ -59,6 +59,7 @@ import { join } from "node:path";
 
 import {
   asNodeId,
+  ATOMIC_FACET,
   type ContentAddress,
   type FingerprintMap,
   type WorldModelCommit,
@@ -189,6 +190,13 @@ export class FileSystemWorldModelStore implements WorldModelStore {
     if (!existsSync(versionFile)) {
       atomicWrite(versionFile, bytes);
     }
+    const atomicFp = fingerprints[ATOMIC_FACET];
+    if (atomicFp !== undefined && atomicFp !== version) {
+      const aliasFile = this.#aliasFile(node, atomicFp as ContentAddress);
+      if (!existsSync(aliasFile)) {
+        atomicWriteText(aliasFile, version);
+      }
+    }
     this.#writePublishedPointer(node, { version, fingerprints });
 
     return { node: asNodeId(node), version, fingerprints };
@@ -196,7 +204,27 @@ export class FileSystemWorldModelStore implements WorldModelStore {
 
   readVersion(node: string, version: ContentAddress): WorldModelRead | null {
     assertNode(node);
-    const files = this.#readVersionFiles(node, version);
+    let targetVersion = version;
+    let files = this.#readVersionFiles(node, targetVersion);
+    if (!files) {
+      const aliasFile = this.#aliasFile(node, version);
+      if (existsSync(aliasFile)) {
+        const resolved = readFileSync(aliasFile, "utf8").trim() as ContentAddress;
+        files = this.#readVersionFiles(node, resolved);
+        if (files) {
+          targetVersion = resolved;
+        }
+      }
+    }
+    if (!files) {
+      const pointer = this.#readPublishedPointer(node);
+      if (pointer && pointer.fingerprints[ATOMIC_FACET] === version) {
+        files = this.#readVersionFiles(node, pointer.version);
+        if (files) {
+          targetVersion = pointer.version;
+        }
+      }
+    }
     if (!files) {
       return null;
     }
@@ -205,7 +233,7 @@ export class FileSystemWorldModelStore implements WorldModelStore {
         node: asNodeId(node),
         workspace: "published",
         location: this.#publishedLocation(node),
-        version,
+        version: targetVersion,
       },
       files,
     };
@@ -239,6 +267,10 @@ export class FileSystemWorldModelStore implements WorldModelStore {
 
   #versionFile(node: string, version: ContentAddress): string {
     return join(this.#nodeDir(node), VERSIONS_DIR, `${addressSegment(version)}.bin`);
+  }
+
+  #aliasFile(node: string, atomicFp: ContentAddress): string {
+    return join(this.#nodeDir(node), VERSIONS_DIR, `${addressSegment(atomicFp)}.alias`);
   }
 
   /**
