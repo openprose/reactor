@@ -45,3 +45,36 @@ export function selfWake(...refs: readonly ContentAddress[]): Wake {
 export function externalWake(...refs: readonly ContentAddress[]): Wake {
   return frozenWake("external", refs);
 }
+
+/**
+ * Merge two wakes destined for the same node (e.g. multi-producer fan-in / join,
+ * or concurrent wakes arriving during an in-flight render).
+ *
+ * - `refs`: the union of all causal upstream receipt content addresses,
+ *   preserving order and deduplicated.
+ * - `source`: resolved by precedence (`external` > `input` > `self`). If an
+ *   external trigger or gateway receipt landed, the merged wake is `external`;
+ *   otherwise if an upstream producer moved, it is `input`; else `self`.
+ */
+export function mergeWakes(existing: Wake, incoming: Wake): Wake {
+  if (existing === incoming) return existing;
+
+  let source: Wake["source"] = "self";
+  if (existing.source === "external" || incoming.source === "external") {
+    source = "external";
+  } else if (existing.source === "input" || incoming.source === "input") {
+    source = "input";
+  }
+
+  const seen = new Set<ContentAddress>(existing.refs);
+  const refs: ContentAddress[] = [...existing.refs];
+  for (const r of incoming.refs) {
+    if (!seen.has(r)) {
+      seen.add(r);
+      refs.push(r);
+    }
+  }
+
+  return frozenWake(source, refs);
+}
+
