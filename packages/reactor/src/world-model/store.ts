@@ -121,9 +121,10 @@ export interface WorldModelStore {
   ): WorldModelCommit;
 
   /**
-   * Read a specific historical published version by its content address — the
-   * content-addressed read-isolation primitive a render pins at start
-   * (architecture.md §8 L328–L330). `null` if that version is not retained.
+   * Read a specific historical published version by its content address (or
+   * its atomic facet fingerprint) — the content-addressed read-isolation
+   * primitive a render pins at start (architecture.md §8 L328–L330).
+   * `null` if that version is not retained.
    */
   readVersion(node: string, version: ContentAddress): WorldModelRead | null;
 
@@ -178,6 +179,7 @@ export class InMemoryWorldModelStore implements WorldModelStore {
   readonly #published = new Map<string, PublishedEntry>();
   readonly #workspace = new Map<string, WorldModelFiles>();
   readonly #history = new Map<string, Map<ContentAddress, WorldModelFiles>>();
+  readonly #aliases = new Map<string, Map<ContentAddress, ContentAddress>>();
 
   ref(
     node: string,
@@ -249,13 +251,37 @@ export class InMemoryWorldModelStore implements WorldModelStore {
       this.#history.set(node, history);
     }
     history.set(version, frozen);
+    const atomicFp = fingerprints[ATOMIC_FACET];
+    if (atomicFp !== undefined && (atomicFp as string) !== version) {
+      let aliases = this.#aliases.get(node);
+      if (!aliases) {
+        aliases = new Map<ContentAddress, ContentAddress>();
+        this.#aliases.set(node, aliases);
+      }
+      aliases.set(atomicFp as ContentAddress, version);
+    }
 
     return { node: asNodeId(node), version, fingerprints };
   }
 
   readVersion(node: string, version: ContentAddress): WorldModelRead | null {
     assertNode(node);
-    const files = this.#history.get(node)?.get(version);
+    let targetVersion = version;
+    let files = this.#history.get(node)?.get(targetVersion);
+    if (!files) {
+      const resolved = this.#aliases.get(node)?.get(version);
+      if (resolved) {
+        targetVersion = resolved;
+        files = this.#history.get(node)?.get(targetVersion);
+      }
+    }
+    if (!files) {
+      const pub = this.#published.get(node);
+      if (pub && pub.fingerprints[ATOMIC_FACET] === version) {
+        targetVersion = pub.version;
+        files = pub.files;
+      }
+    }
     if (!files) {
       return null;
     }
@@ -264,7 +290,7 @@ export class InMemoryWorldModelStore implements WorldModelStore {
         node: asNodeId(node),
         workspace: "published",
         location: publishedLocation(node),
-        version,
+        version: targetVersion,
       },
       files,
     };

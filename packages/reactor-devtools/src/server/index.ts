@@ -155,7 +155,7 @@ function handle(
     return;
   }
 
-  // S4 click-through: GET /api/node/:id?version=<atomicVersion>.
+  // S4 click-through: GET /api/node/:id?version=<version|atomicVersion>.
   if (path.startsWith("/api/node/")) {
     const node = decodeURIComponent(path.slice("/api/node/".length));
     if (node.length === 0) {
@@ -166,7 +166,7 @@ function handle(
     const version = new URLSearchParams(qs).get("version");
     if (version === null || version.length === 0) {
       sendJson(res, 400, {
-        error: "missing ?version= (a frame's atomicVersion)",
+        error: "missing ?version= (a frame's atomicVersion or store artifact version)",
       });
       return;
     }

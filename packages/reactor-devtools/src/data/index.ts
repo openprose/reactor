@@ -376,7 +376,13 @@ export function openWorldModels(
   stateDir: string,
 ): WorldModelStore | null {
   const directory = join(stateDir, "world-models");
-  if (!existsSync(directory)) return null;
+  if (!existsSync(directory)) {
+    const fallback = join(stateDir, "world-model");
+    if (existsSync(fallback)) {
+      return createFileSystemWorldModelStore({ directory: fallback });
+    }
+    return null;
+  }
   return createFileSystemWorldModelStore({ directory });
 }
 
@@ -415,10 +421,10 @@ function decodeText(bytes: Uint8Array): string | null {
 }
 
 /**
- * Read a node's world-model at a content-addressed version via the store's
- * `readVersion` (R3 resolved: pass `receipt.fingerprints["@atomic"]`). Returns
- * `null` when there is no store, no such node, or no such version. PURE read of
- * the saved `world-models/` dir — no key, no running reactor.
+ * Read a node's world-model at a version (accepting either raw store artifact
+ * version address or receipt frame `atomicVersion`). Returns `null` when there
+ * is no store, no such node, or no such version. PURE read of the saved
+ * `world-models/` dir — no key, no running reactor.
  */
 export function readNodeWorldModel(
   opened: OpenedStateDir,
@@ -429,12 +435,23 @@ export function readNodeWorldModel(
   if (store === null) return null;
   let read;
   try {
-    // The URL `version` is a content address by contract (R3: a frame's
-    // `atomicVersion` = `fingerprints["@atomic"]`). Cast at this boundary.
+    // The URL `version` can be a raw store artifact address or a frame's
+    // `atomicVersion` (= `fingerprints["@atomic"]`).
     read = store.readVersion(node, version as ContentAddress);
   } catch {
     // `readVersion` asserts the node name; an unknown node is "not found".
     return null;
+  }
+  if (read === null) {
+    // Defensive fallback: check if current published pointer matches requested atomic version
+    try {
+      const fps = store.publishedFingerprints(node);
+      if (fps[ATOMIC_FACET] === version) {
+        read = store.read(node, "published");
+      }
+    } catch {
+      // ignore
+    }
   }
   if (read === null) return null;
 
