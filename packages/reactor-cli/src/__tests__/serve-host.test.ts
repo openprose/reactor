@@ -298,6 +298,137 @@ describe('reactor serve host — multi-reactor isolation (offline gate)', () => 
     }
   });
 
+  it('a reactor whose poll rejects is reported while the other reactors keep being served', async () => {
+    const stateRoot = freshState();
+    const projectDir = writeTwoReactorProject(stateRoot);
+    // alpha's freshness reader arms the monitor at boot (a lapsed `valid_until`),
+    // then rejects on the next read: the one the continuity poll performs.
+    let alphaReads = 0;
+    const alphaFreshness = (node: string): unknown => {
+      if (node !== MONITOR) {
+        return null;
+      }
+      alphaReads += 1;
+      if (alphaReads > 1) {
+        throw new Error('alpha freshness store unavailable');
+      }
+      return {
+        node: MONITOR,
+        contract_fingerprint: 'c:monitor@1',
+        input_fingerprints: {},
+        facets: [{ facet: 'freshness', fingerprint: 'f:stale', valid_until: '2020-01-01T00:00:00.000Z' }],
+        prev: null,
+      };
+    };
+    const failures: { name: string; phase: string; message: string }[] = [];
+    try {
+      const host = await bootHost({
+        projectDir,
+        stateDir: stateRoot,
+        offline: true,
+        concurrency: 2,
+        testSeams: {
+          alpha: { ...seamFor(stateRoot, 'alpha'), testReadFreshness: alphaFreshness },
+          beta: seamFor(stateRoot, 'beta'),
+        },
+        onReactorError: (failure) => {
+          failures.push({
+            name: failure.name,
+            phase: failure.phase,
+            message: failure.error instanceof Error ? failure.error.message : String(failure.error),
+          });
+        },
+      });
+      try {
+        const beta = host.byName('beta');
+        assert.ok(beta, 'beta resolvable');
+        const betaReceiptsBefore = beta.reactor.ledger.all().length;
+
+        // The host resolves: alpha's failure is handed over, beta is untouched.
+        await host.pollAll(host.reactors[0]!.reactor.clock.now());
+        assert.deepEqual(failures, [
+          { name: 'alpha', phase: 'poll', message: 'alpha freshness store unavailable' },
+        ]);
+        assert.equal(alphaReads, 2, 'alpha was armed at boot and read once by the poll');
+        assert.equal(beta.reactor.ledger.all().length, betaReceiptsBefore, 'beta ledger untouched');
+
+        // beta keeps being served on the next cycle; alpha keeps being reported.
+        await host.pollAll(host.reactors[0]!.reactor.clock.now());
+        assert.equal(failures.length, 2);
+        assert.ok(failures.every((f) => f.name === 'alpha'));
+        await beta.trigger(MONITOR);
+        assert.ok(beta.reactor.ledger.all().length > betaReceiptsBefore, 'beta still triggers');
+      } finally {
+        await host.shutdown();
+      }
+    } finally {
+      rmSync(stateRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('without an error handler a rejected poll surfaces only after every reactor settled', async () => {
+    const stateRoot = freshState();
+    const projectDir = writeTwoReactorProject(stateRoot);
+    // alpha rejects on the poll's read; beta's reader is armed the same way but
+    // keeps answering, and records the read the poll performs. Serial pool:
+    // alpha polls first, so beta's poll can only run after alpha rejected.
+    const stale = {
+      node: MONITOR,
+      contract_fingerprint: 'c:monitor@1',
+      input_fingerprints: {},
+      facets: [{ facet: 'freshness', fingerprint: 'f:stale', valid_until: '2020-01-01T00:00:00.000Z' }],
+      prev: null,
+    };
+    let alphaReads = 0;
+    const alphaFreshness = (node: string): unknown => {
+      if (node !== MONITOR) {
+        return null;
+      }
+      alphaReads += 1;
+      if (alphaReads > 1) {
+        throw new Error('alpha freshness store unavailable');
+      }
+      return stale;
+    };
+    let betaPollReads = 0;
+    let betaArmed = false;
+    const betaFreshness = (node: string): unknown => {
+      if (node !== MONITOR) {
+        return null;
+      }
+      if (betaArmed) {
+        betaPollReads += 1;
+        return null; // freshness moved: re-arm, fire nothing
+      }
+      betaArmed = true;
+      return stale;
+    };
+    try {
+      const host = await bootHost({
+        projectDir,
+        stateDir: stateRoot,
+        offline: true,
+        concurrency: 1,
+        testSeams: {
+          alpha: { ...seamFor(stateRoot, 'alpha'), testReadFreshness: alphaFreshness },
+          beta: { ...seamFor(stateRoot, 'beta'), testReadFreshness: betaFreshness },
+        },
+      });
+      try {
+        await assert.rejects(
+          host.pollAll(host.reactors[0]!.reactor.clock.now()),
+          /alpha freshness store unavailable/,
+        );
+        // By the time the rejection is observed, beta's poll has already run.
+        assert.equal(betaPollReads, 1, 'beta polled despite alpha rejecting first');
+      } finally {
+        await host.shutdown();
+      }
+    } finally {
+      rmSync(stateRoot, { recursive: true, force: true });
+    }
+  });
+
   it('committed fingerprints match between a concurrency=2 host and a serial host', async () => {
     const fingerprintsFor = async (concurrency: number) => {
       const stateRoot = freshState();

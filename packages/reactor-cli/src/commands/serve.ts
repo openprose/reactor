@@ -581,6 +581,7 @@ export async function runServeCommand(
   };
 
   let host: Awaited<ReturnType<typeof bootHost>>;
+  const reactorErrorsReported = new Set<string>();
   try {
     host = await bootHost({
       ...(options.stateDir !== undefined ? { stateDir: options.stateDir } : {}),
@@ -589,6 +590,35 @@ export async function runServeCommand(
       ...(options.offline !== undefined ? { offline: options.offline } : {}),
       ...(options.concurrency !== undefined ? { concurrency: options.concurrency } : {}),
       ...(options.testSeams !== undefined ? { testSeams: options.testSeams } : {}),
+      onReactorError: (failure) => {
+        // One reactor's failed poll is an operator-visible line every cycle, but
+        // the categorized error event is sampled once per reactor (a persistent
+        // fault polled on a 60s cadence would otherwise flood the backend).
+        const msg =
+          failure.error instanceof Error ? failure.error.message : String(failure.error);
+        if (options.json === true) {
+          write(
+            JSON.stringify({
+              status: 'reactor-error',
+              reactor: failure.name,
+              phase: failure.phase,
+              message: msg,
+            }),
+          );
+        } else {
+          write(`reactor ${failure.name}: ${failure.phase} failed: ${msg}`);
+        }
+        if (!reactorErrorsReported.has(failure.name)) {
+          reactorErrorsReported.add(failure.name);
+          telemetry.event(
+            TelemetryEvent.ERROR,
+            buildEventProperties(
+              { command: 'serve', outcome: 'failure', durationMs: Date.now() - startedAt },
+              { errorCategory: errorCategory(failure.error) },
+            ),
+          );
+        }
+      },
     });
   } catch (err) {
     // Boot failure (stale IR / compile failed / no contracts) gets a clean
